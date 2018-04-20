@@ -402,7 +402,28 @@ void HandleButtonEvent(const XButtonEvent *event)
       lastX = event->x;
       lastY = event->y;
    }
-
+   
+   /* Global mouse binding to root menu 3 */
+   int mx = event->x;
+   int my = event->y;
+   int bs = 0;
+   if (button == 8) {
+      np = FindClientByParent(event->window);
+      if (np && event->window != rootWindow) {
+         bs = (np->state.border & BORDER_OUTLINE) ? settings.borderWidth : 0;
+         mx += np->x - bs;
+         my += np->y - GetTitleHeight() - bs;
+      } else {
+         np = FindClientByWindow(event->window);
+         if (np) {
+            mx += np->x;
+            my += np->y;
+         }
+      }
+      ShowRootMenu(3, mx, my, 0);
+      return;
+   }
+   
    /* Dispatch the event. */
    np = FindClientByParent(event->window);
    if(np) {
