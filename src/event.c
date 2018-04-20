@@ -443,8 +443,38 @@ void HandleButtonEvent(const XButtonEvent *event)
          case Button3:
             if(move_resize) {
                GetBorderSize(&np->state, &north, &south, &east, &west);
-               ResizeClient(np, MC_BORDER | MC_BORDER_E | MC_BORDER_S,
-                            event->x + west, event->y + north);
+               /* get nearest corner */
+               char nedge = MC_BORDER;
+               if (event->x + west > np->width/2) {
+                  nedge |= MC_BORDER_E;
+               } else {
+                  nedge |= MC_BORDER_W;
+               }
+               if (event->y + north > np->height/2) {
+                  nedge |= MC_BORDER_S;
+               } else {
+                  nedge |= MC_BORDER_N;
+               }
+               /* if centered near one edge, only resize one dimension */
+               if ((event->y + north > np->height/3)
+                  && (event->y + north < np->height*2/3)) {
+                  if (event->x + west > np->width*2/3) {
+                     nedge = MC_BORDER | MC_BORDER_E;
+                  }
+                  if (event->x + west < np->width/3) {
+                     nedge = MC_BORDER | MC_BORDER_W;
+                  }
+               }
+               if ((event->x + west > np->width/3)
+                  && (event->x + west < np->width*2/3)) {
+                  if (event->y + north > np->height*2/3) {
+                     nedge = MC_BORDER | MC_BORDER_S;
+                  }
+                  if (event->y + north < np->height/3) {
+                     nedge = MC_BORDER | MC_BORDER_N;
+                  }
+               }
+               ResizeClient(np, nedge, event->x + west, event->y + north);
             } else {
                FocusClient(np);
                if(settings.focusModel == FOCUS_SLOPPY
