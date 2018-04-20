@@ -15,6 +15,7 @@
 #include "match.h"
 #include "misc.h"
 #include "settings.h"
+#include "color.h"
 
 /** What part of the window to match. */
 typedef unsigned int MatchType;
@@ -272,6 +273,11 @@ void ApplyGroup(const GroupType *gp, ClientNode *np)
    char noPager = 0;
    char noList = 0;
 
+   char *temp;
+   char *sep;
+   XColor tmpcol;
+   int len;
+
    Assert(gp);
    Assert(np);
    for(lp = gp->options; lp; lp = lp->next) {
@@ -427,6 +433,36 @@ void ApplyGroup(const GroupType *gp, ClientNode *np)
          break;
       case OPTION_HEIGHT:
          np->height = Max(1, lp->value.u);
+         break;
+      case OPTION_BACKGROUND:
+         sep = strchr(lp->str, ':');
+         if(sep) {
+            /* Get the first color. */
+            len = (int)(sep - lp->str);
+            temp = AllocateStack(len + 1);
+            memcpy(temp, lp->str, len);
+            temp[len] = 0;
+            ParseColor(temp, &tmpcol);
+            ReleaseStack(temp);
+            np->tcolors.bg1 = tmpcol.pixel;
+
+            /* Get the second color. */
+            len = strlen(sep + 1);
+            temp = AllocateStack(len + 1);
+            memcpy(temp, sep + 1, len);
+            temp[len] = 0;
+            ParseColor(temp, &tmpcol);
+            ReleaseStack(temp);
+            np->tcolors.bg2 = tmpcol.pixel;
+         } else {
+            ParseColor(lp->str, &tmpcol);
+            np->tcolors.bg1 = tmpcol.pixel;
+            np->tcolors.bg2 = tmpcol.pixel;
+         }
+         break;
+      case OPTION_OUTLINE:
+         ParseColor(lp->str, &tmpcol);
+         np->tcolors.outline = tmpcol.pixel;
          break;
       default:
          Debug("invalid option: %d", lp->option);

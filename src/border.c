@@ -394,7 +394,7 @@ void DrawBorderHelper(const ClientNode *np)
 
    Pixmap canvas;
    GC gc;
-
+   
    Assert(np);
 
    GetBorderSize(&np->state, &north, &south, &east, &west);
@@ -409,6 +409,15 @@ void DrawBorderHelper(const ClientNode *np)
       titleColor2 = colors[COLOR_TITLE_ACTIVE_BG2];
       outlineColor = colors[COLOR_TITLE_ACTIVE_DOWN];
 
+      if (np->tcolors.bg1) {
+         titleColor1 = np->tcolors.bg1;
+      }
+      if (np->tcolors.bg2) {
+         titleColor2 = np->tcolors.bg2;
+      }
+      if (np->tcolors.outline) {
+         outlineColor = np->tcolors.outline;
+      }
    } else {
 
       borderTextColor = COLOR_TITLE_FG;

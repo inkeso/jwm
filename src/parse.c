@@ -1875,6 +1875,10 @@ void ParseGroupOption(const TokenNode *tp, struct GroupType *group,
    } else if(!strncmp(option, "height:", 7)) {
       const unsigned height = (unsigned)atoi(option + 7);
       AddGroupOptionUnsigned(group, OPTION_HEIGHT, height);
+   } else if(!strncmp(option, "background:", 11)) {
+      AddGroupOptionString(group, OPTION_BACKGROUND, option + 11);
+   } else if(!strncmp(option, "outline:", 8)) {
+      AddGroupOptionString(group, OPTION_OUTLINE, option + 8);
    } else {
       ParseError(tp, _("invalid Group Option: %s"), option);
    }
