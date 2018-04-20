@@ -111,6 +111,13 @@ typedef struct AspectRatio {
    int maxy;   /**< The y component of the maximum aspect ratio. */
 } AspectRatio;
 
+/** The (potentially different) colors of titlebar and border */
+typedef struct NewColors {
+   long bg1;
+   long bg2;
+   long outline;
+} NewColors;
+
 /** Struture to store information about a client window. */
 typedef struct ClientNode {
 
@@ -141,6 +148,7 @@ typedef struct ClientNode {
 
    Colormap cmap;             /**< This window's colormap. */
    ColormapNode *colormaps;   /**< Colormaps assigned to this window. */
+   NewColors tcolors;         /**< Title- and outline colors */
 
    char *name;                /**< Name of this window for display. */
    char *instanceName;        /**< Name of this window for properties. */
@@ -148,6 +156,7 @@ typedef struct ClientNode {
    char *machineName;         /**< Name of the machine. */
 
    ClientState state;         /**< Window state. */
+
 
    MouseContextType mouseContext;
 
