@@ -786,6 +786,13 @@ screen.
 .RE
 
 .P
+\fBbackground:\fP\fI#color1:#color2\fP
+.RS
+Set a different background color for the title bar of windows (gradients
+are supported).
+.RE
+
+.P
 .B border
 .RS
 Causes windows in this group to have a border.
@@ -981,6 +988,12 @@ Ignore the urgent hint for windows in this group.
 .RS
 Set the opacity for windows in this group.
 The value is a number between 0.0 and 1.0 inclusive.
+.RE
+
+.P
+\fBoutline:\fP\fI#color\fP
+.RS
+Set a different outline color for windows in this group.
 .RE
 
 .P
