@@ -631,8 +631,8 @@ void CascadeClient(const BoundingBox *box, ClientNode *np)
       }
    }
 
-   ConstrainSize(np);
-   ConstrainPosition(np);
+   // ConstrainSize(np);
+   // ConstrainPosition(np);
 
 }
 
@@ -655,7 +655,6 @@ void PlaceClient(ClientNode *np, char alreadyMapped)
          ConstrainSize(np);
          ConstrainPosition(np);
       }
-
    } else {
 
       sp = GetMouseScreen();

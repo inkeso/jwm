@@ -407,7 +407,7 @@ void HandleButtonEvent(const XButtonEvent *event)
    int mx = event->x;
    int my = event->y;
    int bs = 0;
-   if (button == 8) {
+   if (button == 10) {
       np = FindClientByParent(event->window);
       if (np && event->window != rootWindow) {
          bs = (np->state.border & BORDER_OUTLINE) ? settings.borderWidth : 0;
