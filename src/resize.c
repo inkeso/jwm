@@ -154,8 +154,10 @@ void ResizeClient(ClientNode *np, MouseContextType context,
    oldw = np->width;
    oldh = np->height;
 
-   gwidth = (np->width - np->baseWidth) / np->xinc;
-   gheight = (np->height - np->baseHeight) / np->yinc;
+   //gwidth = (np->width - np->baseWidth) / np->xinc;
+   //gheight = (np->height - np->baseHeight) / np->yinc;
+   gwidth = np->width / np->xinc;
+   gheight = np->height / np->yinc;
 
    GetBorderSize(&np->state, &north, &south, &east, &west);
 
@@ -199,8 +201,10 @@ void ResizeClient(ClientNode *np, MouseContextType context,
          lastgwidth = gwidth;
          lastgheight = gheight;
 
-         gwidth = (np->width - np->baseWidth) / np->xinc;
-         gheight = (np->height - np->baseHeight) / np->yinc;
+         //gwidth = (np->width - np->baseWidth) / np->xinc;
+         //gheight = (np->height - np->baseHeight) / np->yinc;
+         gwidth = np->width / np->xinc;
+         gheight = np->height / np->yinc;
 
          if(lastgheight != gheight || lastgwidth != gwidth) {
 
