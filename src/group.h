@@ -57,8 +57,9 @@ typedef unsigned char OptionType;
 #define OPTION_Y              39    /**< Window Y position. */
 #define OPTION_WIDTH          40    /**< Initial window width. */
 #define OPTION_HEIGHT         41    /**< Initial window height. */
-#define OPTION_BACKGROUND     42    /**< Different background color for titlebar. */
+#define OPTION_NOMAXBORDER    42    /**< No border on maximized windows. */
 #define OPTION_OUTLINE        43    /**< Different bordercolor */
+#define OPTION_BACKGROUND     44    /**< Different background color for titlebar. */
 
 /*@{*/
 #define InitializeGroups() (void)(0)

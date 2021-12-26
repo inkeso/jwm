@@ -36,7 +36,6 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/mman.h>
 #include <fcntl.h>
 #include <errno.h>
 
@@ -44,6 +43,7 @@
  * Note that this mapping must be sorted.
  */
 static const StringMappingType ACTION_MAP[] = {
+   { "center",                ACTION_CENTER        },
    { "close",                 ACTION_CLOSE         },
    { "ddesktop",              ACTION_DDESKTOP      },
    { "desktop#",              ACTION_DESKTOP       },
@@ -126,6 +126,7 @@ static const StringMappingType OPTION_MAP[] = {
    { "nofullscreen",       OPTION_NOFULLSCREEN  },
    { "nolist",             OPTION_NOLIST        },
    { "nomax",              OPTION_NOMAX         },
+   { "nomaxborder",        OPTION_NOMAXBORDER   },
    { "nomin",              OPTION_NOMIN         },
    { "nomove",             OPTION_NOMOVE        },
    { "nopager",            OPTION_NOPAGER       },
@@ -134,6 +135,7 @@ static const StringMappingType OPTION_MAP[] = {
    { "notitle",            OPTION_NOTITLE       },
    { "noturgent",          OPTION_NOTURGENT     },
    { "pignore",            OPTION_PIGNORE       },
+   { "shaded",             OPTION_SHADED        },
    { "sticky",             OPTION_STICKY        },
    { "tiled",              OPTION_TILED         },
    { "title",              OPTION_TITLE         },
@@ -152,6 +154,7 @@ static const char *X_ATTRIBUTE = "x";
 static const char *Y_ATTRIBUTE = "y";
 static const char *WIDTH_ATTRIBUTE = "width";
 static const char *HEIGHT_ATTRIBUTE = "height";
+static const char *SCREEN_ATTRIBUTE = "screen";
 static const char *DYNAMIC_ATTRIBUTE = "dynamic";
 static const char *SPACING_ATTRIBUTE = "spacing";
 static const char *TIMEOUT_ATTRIBUTE = "timeout";
@@ -1307,6 +1310,11 @@ void ParseTray(const TokenNode *tp)
       SetTrayHeight(tray, attr);
    }
 
+   attr = FindAttribute(tp->attributes, SCREEN_ATTRIBUTE);
+   if(attr) {
+      SetTrayScreen(tray, attr);
+   }
+
    attr = FindAttribute(tp->attributes, "valign");
    SetTrayVerticalAlignment(tray, attr);
 
@@ -1998,6 +2006,7 @@ TokenNode *TokenizeFile(const char *fileName)
    TokenNode *tokens;
    char *path;
    char *buffer;
+   ssize_t offset;
 
    path = CopyString(fileName);
    ExpandPath(&path);
@@ -2012,13 +2021,18 @@ TokenNode *TokenizeFile(const char *fileName)
       close(fd);
       return NULL;
    }
-   buffer = mmap(NULL, sbuf.st_size, PROT_READ, MAP_SHARED, fd, 0);
-   if(JUNLIKELY(buffer == MAP_FAILED)) {
-      close(fd);
-      return NULL;
+   buffer = Allocate(sbuf.st_size + 1);
+   offset = 0;
+   while(offset < sbuf.st_size) {
+      const ssize_t rc = read(fd, &buffer[offset], sbuf.st_size - offset);
+      if(rc <= 0) {
+         break;
+      }
+      offset += rc;
    }
+   buffer[offset] = 0;
    tokens = Tokenize(buffer, fileName);
-   munmap(buffer, sbuf.st_size);
+   Release(buffer);
    close(fd);
    return tokens;
 }
@@ -2093,7 +2107,7 @@ unsigned ParseTimeout(const TokenNode *tp)
 /** Parse opacity (a float between 0.0 and 1.0). */
 unsigned ParseOpacity(const TokenNode *tp, const char *str)
 {
-   float value;
+   double value;
    if(JUNLIKELY(!str)) {
       ParseError(tp, _("no value specified"));
       return UINT_MAX;

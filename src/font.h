@@ -31,9 +31,9 @@ void DestroyFonts(void);
 
 /** Set the font to use for a component.
  * @param type The font component.
- * @param value The font to use.
+ * @param name A description of the font (XFT or XLFD).
  */
-void SetFont(FontType type, const char *value);
+void SetFont(FontType type, const char *name);
 
 /** Render a string.
  * @param d The drawable on which to render the string.

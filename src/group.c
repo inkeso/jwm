@@ -455,6 +455,9 @@ void ApplyGroup(const GroupType *gp, ClientNode *np)
       case OPTION_HEIGHT:
          np->height = Max(1, lp->value.u);
          break;
+      case OPTION_NOMAXBORDER:
+         np->state.border |= BORDER_NOMAX;
+         break;
       case OPTION_BACKGROUND:
          sep = strchr(lp->str, ':');
          if(sep) {

@@ -39,7 +39,7 @@ static void HandleTrayButtonPress(TrayType *tp, const XButtonEvent *event);
 static void HandleTrayButtonRelease(TrayType *tp, const XButtonEvent *event);
 static void HandleTrayMotionNotify(TrayType *tp, const XMotionEvent *event);
 
-static void ComputeTraySize(TrayType *tp);
+static void ComputeTrayGeometry(TrayType *tp);
 static int ComputeMaxWidth(TrayType *tp);
 static int ComputeTotalWidth(TrayType *tp);
 static int ComputeMaxHeight(TrayType *tp);
@@ -220,6 +220,7 @@ TrayType *CreateTray(void)
 
    tp->requestedX = 0;
    tp->requestedY = -1;
+   tp->screen = 0;
    tp->x = 0;
    tp->y = -1;
    tp->requestedWidth = 0;
@@ -393,32 +394,73 @@ char CheckVerticalFill(TrayType *tp)
    return 0;
 }
 
-/** Compute the size of a tray. */
-void ComputeTraySize(TrayType *tp)
+/** Compute the size and position of a tray. */
+void ComputeTrayGeometry(TrayType *tp)
 {
+   const ScreenType *sp = GetScreen(tp->screen);
    TrayComponentType *cp;
-   const ScreenType *sp;
    int x, y;
+
+   /* Set requested position.
+    * The requested coordinates (if provided) are screen-relative.
+    * This will compute x and y to be in root-window coordinates.
+    */
+   x = 0;
+   y = 0;
+   if(tp->halign == TALIGN_FIXED) {
+      x = tp->requestedX;
+      if(x < 0) {
+         x += sp->width + 1;
+      }
+   }
+   if(tp->valign == TALIGN_FIXED) {
+      y = tp->requestedY;
+      if(y < 0) {
+         y += sp->height + 1;
+      }
+   }
+   x += sp->x;
+   y += sp->y;
+
+   /* Set requested sizes. */
+   if(tp->requestedWidth >= 0) {
+      tp->width = tp->requestedWidth;
+   } else {
+      tp->width = sp->width + tp->requestedWidth - (x - sp->x);
+   }
+   if(tp->requestedHeight >= 0) {
+      tp->height = tp->requestedHeight;
+   } else {
+      tp->height = sp->height + tp->requestedHeight - (y - sp->y);
+   }
+   for(cp = tp->components; cp; cp = cp->next) {
+      if(cp->requestedWidth) {
+         cp->width = cp->requestedWidth;
+      } else {
+         cp->width = 0;
+      }
+      if(cp->requestedHeight) {
+         cp->height = cp->requestedHeight;
+      } else {
+         cp->height = 0;
+      }
+   }
 
    /* Determine the first dimension. */
    if(tp->layout == LAYOUT_HORIZONTAL) {
-
-      if(tp->height == 0) {
+      if(tp->requestedHeight == 0) {
          tp->height = ComputeMaxHeight(tp) + TRAY_BORDER_SIZE * 2;
       }
       if(tp->height == 0) {
          tp->height = DEFAULT_TRAY_HEIGHT;
       }
-
    } else {
-
-      if(tp->width == 0) {
+      if(tp->requestedWidth == 0) {
          tp->width = ComputeMaxWidth(tp) + TRAY_BORDER_SIZE * 2;
       }
       if(tp->width == 0) {
          tp->width = DEFAULT_TRAY_WIDTH;
       }
-
    }
 
    /* Now at least one size is known. Inform the components. */
@@ -432,54 +474,11 @@ void ComputeTraySize(TrayType *tp)
       }
    }
 
-   /* Initialize the coordinates. */
-   tp->x = tp->requestedX;
-   tp->y = tp->requestedY;
-
-   /* Determine on which screen the tray will reside. */
-   switch(tp->valign) {
-   case TALIGN_TOP:
-      y = 0;
-      break;
-   case TALIGN_BOTTOM:
-      y = rootHeight - 1;
-      break;
-   case TALIGN_CENTER:
-      y = 1 + rootHeight / 2;
-      break;
-   default:
-      if(tp->y < 0) {
-         y = rootHeight + tp->y;
-      } else {
-         y = tp->y;
-      }
-      break;
-   }
-   switch(tp->halign) {
-   case TALIGN_LEFT:
-      x = 0;
-      break;
-   case TALIGN_RIGHT:
-      x = rootWidth - 1;
-      break;
-   case TALIGN_CENTER:
-      x = 1 + rootWidth / 2;
-      break;
-   default:
-      if(tp->x < 0) {
-         x = rootWidth + tp->x;
-      } else {
-         x = tp->x;
-      }
-      break;
-   }
-   sp = GetCurrentScreen(x, y);
-
    /* Determine the missing dimension. */
    if(tp->layout == LAYOUT_HORIZONTAL) {
-      if(tp->width == 0) {
+      if(tp->requestedWidth == 0) {
          if(CheckHorizontalFill(tp)) {
-            tp->width = sp->width + sp->x - x;
+            tp->width = sp->width - abs(tp->requestedX);
          } else {
             tp->width = ComputeTotalWidth(tp);
          }
@@ -488,9 +487,9 @@ void ComputeTraySize(TrayType *tp)
          }
       }
    } else {
-      if(tp->height == 0) {
+      if(tp->requestedHeight == 0) {
          if(CheckVerticalFill(tp)) {
-            tp->height = sp->height + sp->y - y;
+            tp->height = sp->height - abs(tp->requestedY);
          } else {
             tp->height = ComputeTotalHeight(tp);
          }
@@ -512,8 +511,10 @@ void ComputeTraySize(TrayType *tp)
       tp->y = sp->y + (sp->height - tp->height) / 2;
       break;
    default:
-      if(tp->y < 0) {
-         tp->y = sp->y + sp->height - tp->height + tp->y + 1;
+      if(tp->requestedY < 0) {
+         tp->y = y - tp->height;
+      } else {
+         tp->y = y;
       }
       break;
    }
@@ -529,8 +530,10 @@ void ComputeTraySize(TrayType *tp)
       tp->x = sp->x + (sp->width - tp->width) / 2;
       break;
    default:
-      if(tp->x < 0) {
-         tp->x = sp->x + sp->width - tp->width + tp->x + 1;
+      if(tp->requestedX < 0) {
+         tp->x = x - tp->width;
+      } else {
+         tp->x = x;
       }
       break;
    }
@@ -863,31 +866,7 @@ void LayoutTray(TrayType *tp, int *variableSize, int *variableRemainder)
    int width, height;
    int temp;
 
-   if(tp->requestedWidth >= 0) {
-      tp->width = tp->requestedWidth;
-   } else {
-      tp->width = rootWidth + tp->requestedWidth - tp->x;
-   }
-   if(tp->requestedHeight >= 0) {
-      tp->height = tp->requestedHeight;
-   } else {
-      tp->height = rootHeight + tp->requestedHeight - tp->y;
-   }
-
-   for(cp = tp->components; cp; cp = cp->next) {
-      if(cp->requestedWidth != 0) {
-         cp->width = cp->requestedWidth;
-      } else {
-         cp->width = 0;
-      }
-      if(cp->requestedHeight != 0) {
-         cp->height = cp->requestedHeight;
-      } else {
-         cp->height = 0;
-      }
-   }
-
-   ComputeTraySize(tp);
+   ComputeTrayGeometry(tp);
 
    /* Get the remaining size after setting fixed size components. */
    /* Also, keep track of the number of variable size components. */
@@ -1085,37 +1064,22 @@ void SetTrayHeight(TrayType *tp, const char *str)
    tp->requestedHeight = atoi(str);
 }
 
+/** Set the tray screen index. */
+void SetTrayScreen(TrayType *tp, const char *str)
+{
+   tp->screen = atoi(str);
+}
+
 
 /** Set the tray orientation. */
 void SetTrayLayout(TrayType *tp, const char *str)
 {
-   if(!str) {
-
-      /* Compute based on requested size. */
-
-   } else if(!strcmp(str, "horizontal")) {
-
+   if(!str || !strcmp(str, "horizontal")) {
       tp->layout = LAYOUT_HORIZONTAL;
-      return;
-
    } else if(!strcmp(str, "vertical")) {
-
       tp->layout = LAYOUT_VERTICAL;
-      return;
-
    } else {
       Warning(_("invalid tray layout: \"%s\""), str);
-   }
-
-   /* Prefer horizontal layout, but use vertical if
-    * width is finite and height is larger than width or infinite.
-    */
-   if(tp->requestedWidth > 0
-      && (tp->requestedHeight == 0
-      || tp->requestedHeight > tp->requestedWidth)) {
-      tp->layout = LAYOUT_VERTICAL;
-   } else {
-      tp->layout = LAYOUT_HORIZONTAL;
    }
 }
 

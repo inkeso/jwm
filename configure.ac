@@ -2,11 +2,11 @@
 # JWM autoconf.
 ############################################################################
 
-AC_INIT(jwm, 2.4.0, joewing@joewing.net)
-AC_PREREQ(2.57)
+AC_INIT([jwm],[2.4.1],[joewing@joewing.net])
+AC_PREREQ([2.71])
 AC_CONFIG_SRCDIR([src])
 AC_CONFIG_SRCDIR([po])
-AC_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 AC_LANG(C)
 
 AC_PROG_CC
@@ -93,17 +93,7 @@ AC_FUNC_ALLOCA()
 # Check for pkg-config.
 ############################################################################
 
-AC_DEFUN([JWM_PKGCONFIG_EXISTS],
-[
-   AC_MSG_CHECKING([for pkg-config])
-   if which pkg-config >/dev/null ; then
-      PKGCONFIG=pkg-config
-      AC_MSG_RESULT($PKGCONFIG)
-   else
-      PKGCONFIG=""
-      AC_MSG_RESULT([no])
-   fi
-])
+AC_DEFUN([JWM_PKGCONFIG_EXISTS],[AC_PATH_TOOL(PKGCONFIG,pkg-config)])
 
 AC_DEFUN([JWM_PKGCONFIG],
 [
@@ -125,16 +115,15 @@ JWM_PKGCONFIG([use_pkgconfig_png], [libpng])
 JWM_PKGCONFIG([use_pkgconfig_jpeg], [libjpeg])
 JWM_PKGCONFIG([use_pkgconfig_cairo], [cairo])
 JWM_PKGCONFIG([use_pkgconfig_rsvg], [librsvg-2.0])
-JWM_PKGCONFIG([use_pkgconfig_freetype2], [freetype2])
 JWM_PKGCONFIG([use_pkgconfig_xft], [xft])
 JWM_PKGCONFIG([use_pkgconfig_xrender], [xrender])
-JWM_PKGCONFIG([use_pkgconfig_fribidi], [fribidi])
+JWM_PKGCONFIG([use_pkgconfig_pango], [pangoxft])
 
 ############################################################################
 # Check if confirm dialogs should be used.
 ############################################################################
 AC_ARG_ENABLE(confirm,
-   AC_HELP_STRING([--disable-confirm], [disable confirm dialogs]) )
+   AS_HELP_STRING([--disable-confirm],[disable confirm dialogs]) )
 if test "$enable_confirm" = "no" ; then
    AC_DEFINE(DISABLE_CONFIRM, 1, [Define to disable confirm dialogs])
 else
@@ -145,7 +134,7 @@ fi
 # Check if icon support was requested.
 ############################################################################
 AC_ARG_ENABLE(icons,
-   AC_HELP_STRING([--disable-icons], [disable icon support]) )
+   AS_HELP_STRING([--disable-icons],[disable icon support]) )
 if test "$enable_icons" != "no" ; then
    enable_icons="yes"
    AC_DEFINE(USE_ICONS, 1, [Define to enable icon support] )
@@ -162,7 +151,7 @@ fi
 # Check if PNG support was requested and available.
 ############################################################################
 AC_ARG_ENABLE(png,
-   AC_HELP_STRING([--disable-png], [disable PNG images]) )
+   AS_HELP_STRING([--disable-png],[disable PNG images]) )
 if test "$enable_png" != "no" ; then
    if test "$use_pkgconfig_png" = "yes" ; then
       PNG_CFLAGS=`$PKGCONFIG --cflags libpng`
@@ -192,7 +181,7 @@ fi
 # Check if Cairo support was requested and available.
 ############################################################################
 AC_ARG_ENABLE(cairo,
-   AC_HELP_STRING([--disable-cairo], [disable Cairo support]) )
+   AS_HELP_STRING([--disable-cairo],[disable Cairo support]) )
 if test "$enable_cairo" != "no" ; then
    if test "$use_pkgconfig_cairo" = "yes" ; then
       CAIRO_CFLAGS=`$PKGCONFIG --cflags cairo`
@@ -222,7 +211,7 @@ fi
 # Check if librsvg support was requested and available.
 ############################################################################
 AC_ARG_ENABLE(rsvg,
-   AC_HELP_STRING([--disable-rsvg], [disable rsvg support]) )
+   AS_HELP_STRING([--disable-rsvg],[disable rsvg support]) )
 if test "$enable_rsvg" != "no" ; then
    if test "$use_pkgconfig_rsvg" = "yes" ; then
       RSVG_CFLAGS=`$PKGCONFIG --cflags librsvg-2.0`
@@ -254,7 +243,7 @@ fi
 # Check if JPEG support was requested and available.
 ############################################################################
 AC_ARG_ENABLE(jpeg,
-   AC_HELP_STRING([--disable-jpeg], [disable JPEG images]) )
+   AS_HELP_STRING([--disable-jpeg],[disable JPEG images]) )
 if test "$enable_jpeg" != "no" ; then
    if test "$use_pkgconfig_jpeg" = "yes" ; then
       JPEG_CFLAGS=`$PKGCONFIG --cflags libjpeg`
@@ -284,19 +273,8 @@ fi
 ############################################################################
 # Check if XFT support was requested and available.
 ############################################################################
-AC_ARG_ENABLE(xft, AC_HELP_STRING([--disable-xft], [disable Xft]) )
+AC_ARG_ENABLE(xft, AS_HELP_STRING([--disable-xft],[disable Xft]) )
 if test "$enable_xft" != "no"; then
-
-   if test "$use_pkgconfig_freetype2" = "yes" ; then
-      FT2_CFLAGS=`$PKGCONFIG --cflags freetype2`
-      FT2_LDFLAGS=`$PKGCONFIG --libs freetype2`
-   elif which freetype-config >/dev/null ; then
-      FT2_CFLAGS=`freetype-config --cflags`
-      FT2_LDFLAGS=`freetype-config --libs`
-   else
-      FT2_CFLAGS=""
-      FT2_LDFLAGS=""
-   fi
 
    if test "$use_pkgconfig_xft" = "yes" ; then
       XFT_CFLAGS=`$PKGCONFIG --cflags xft`
@@ -329,7 +307,7 @@ fi
 # Check if support for the XRENDER extension was requested and available.
 ############################################################################
 AC_ARG_ENABLE(xrender,
-   AC_HELP_STRING([--disable-xrender], [disable XRender]) )
+   AS_HELP_STRING([--disable-xrender],[disable XRender]) )
 if test "$enable_xrender" != "no"; then
 
    if test "$use_pkgconfig_xrender" = "yes" ; then
@@ -360,40 +338,41 @@ if test "$enable_xrender" != "no" ; then
 fi
 
 ############################################################################
-# Check if FriBidi support was requested and available.
+# Check if Pango support was requested and available.
 ############################################################################
-AC_ARG_ENABLE(fribidi,
-   AC_HELP_STRING([--disable-fribidi],
-      [disable bi-directional unicode support]) )
-if test "$enable_fribidi" != "no" ; then
-   if test "$use_pkgconfig_fribidi" = "yes" ; then
-      FRIBIDI_CFLAGS=`$PKGCONFIG --cflags fribidi`
-      FRIBIDI_LDFLAGS=`$PKGCONFIG --libs fribidi`
-      enable_fribidi="yes"
-   elif which fribidi-config >/dev/null ; then
-      FRIBIDI_CFLAGS=`fribidi-config --cflags`
-      FRIBIDI_LDFLAGS=`fribidi-config --libs`
-      enable_fribidi="yes"
-   else
-      FRIBIDI_LDFLAGS="-lfribidi"
-      AC_CHECK_LIB(fribidi, fribidi_charset_to_unicode,
-         [ enable_fribidi="yes" ],
-         [ enable_fribidi="no"
-           AC_MSG_WARN([unable to use FriBidi]) ],
-         [ $FRIBIDI_LDFLAGS ])
+AC_ARG_ENABLE(pango,
+   AS_HELP_STRING([--disable-pango],[disable pango font support]) )
+if test "$enable_xft" != "yes" ; then
+   if test "$enable_pango" != "no" ; then
+      AC_MSG_WARN(["xft required for pango support; disabling pango"])
+      enable_pango="no"
    fi
 fi
-if test "$enable_fribidi" = "yes" ; then
-   LDFLAGS="$LDFLAGS $FRIBIDI_LDFLAGS"
-   CFLAGS="$CFLAGS $FRIBIDI_CFLAGS"
-   AC_DEFINE(USE_FRIBIDI, 1, [Define to use FriBidi])
+if test "$enable_pango" != "no" ; then
+   if test "$use_pkgconfig_pango" = "yes" ; then
+      PANGO_CFLAGS=`$PKGCONFIG --cflags pangoxft`
+      PANGO_LDFLAGS=`$PKGCONFIG --libs pangoxft`
+      enable_pango="yes"
+   else
+      PANGO_LDFLAGS="-lpango -lpango-xft"
+      AC_CHECK_LIB(pango-xft, pango_xft_get_context,
+         [ enable_pango="yes" ],
+         [ enable_pango="no"
+           AC_MSG_WARN([unable to use Pango]) ],
+         [ $PANGO_LDFLAGS ])
+   fi
+fi
+if test "$enable_pango" = "yes" ; then
+   LDFLAGS="$LDFLAGS $PANGO_LDFLAGS"
+   CFLAGS="$CFLAGS $PANGO_CFLAGS"
+   AC_DEFINE(USE_PANGO, 1, [Define to use Pango])
 fi
 
 ############################################################################
 # Check if XPM support was requested and available.
 ############################################################################
 AC_ARG_ENABLE(xpm,
-   AC_HELP_STRING([--disable-xpm], [disable XPM images]) )
+   AS_HELP_STRING([--disable-xpm],[disable XPM images]) )
 if test "$enable_xpm" != "no"; then
 
    # We need to use the XPM libraries in Motif-2.1 on IRIX.
@@ -435,7 +414,7 @@ fi
 # Check if XBM support was requested and available.
 ############################################################################
 AC_ARG_ENABLE(xbm,
-    AC_HELP_STRING([--disable-xbm], [disable XBM images]) )
+    AS_HELP_STRING([--disable-xbm],[disable XBM images]) )
 if test "$enable_xbm" != "no"; then
     AC_CHECK_LIB(X11,  XReadBitmapFileData,
         [ enable_xbm="yes"
@@ -448,7 +427,7 @@ fi
 # Check if support for the shape extension was requested and available.
 ############################################################################
 AC_ARG_ENABLE(shape,
-   AC_HELP_STRING([--disable-shape], [disable use of the X shape extension]) )
+   AS_HELP_STRING([--disable-shape],[disable use of the X shape extension]) )
 if test "$enable_shape" != "no"; then
    AC_CHECK_LIB(Xext, XShapeCombineRectangles,
       [ LDFLAGS="$LDFLAGS -lXext"
@@ -464,7 +443,7 @@ fi
 # larger than 800 pixels in either direction causes problems).
 ############################################################################
 AC_ARG_ENABLE(xmu,
-   AC_HELP_STRING([--disable-xmu], [disable Xmu support]),
+   AS_HELP_STRING([--disable-xmu],[disable Xmu support]),
    [],
    [  if test `uname` = "IRIX" -o `uname` = "IRIX64" ; then
          AC_MSG_WARN([disabling Xmu (it is broken on IRIX)])
@@ -484,7 +463,7 @@ fi
 # Check if support for Xinerama was requested and available.
 ############################################################################
 AC_ARG_ENABLE(xinerama,
-   AC_HELP_STRING([--disable-xinerama], [disable Xinerama support]) )
+   AS_HELP_STRING([--disable-xinerama],[disable Xinerama support]) )
 if test "$enable_xinerama" != "no"; then
    AC_CHECK_LIB(Xinerama, XineramaQueryExtension,
       [ LDFLAGS="$LDFLAGS -lXinerama"
@@ -499,14 +478,14 @@ fi
 ############################################################################
 AM_ICONV
 AM_GNU_GETTEXT([external])
-AM_GNU_GETTEXT_VERSION([0.19])
+AM_GNU_GETTEXT_VERSION([0.20])
 LDFLAGS="$LDFLAGS $LIBINTL $LIBICONV"
 
 ############################################################################
 # Check if debug mode was requested.
 ############################################################################
 AC_ARG_ENABLE(debug,
-   AC_HELP_STRING([--enable-debug], [use this to debug JWM]) )
+   AS_HELP_STRING([--enable-debug],[use this to debug JWM]) )
 if test "$enable_debug" = "yes"; then
    AC_DEFINE(DEBUG, 1, [Define to debug JWM])
    CFLAGS="$CFLAGS -Wall -g -DDEBUG"
@@ -568,13 +547,13 @@ AC_SUBST(DATE, `date -u -d "@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y-%m-%d`)
 AC_SUBST(SYSCONF, "$SYSCONF")
 AC_SUBST(PACKAGE, "$PACKAGE")
 
-AC_OUTPUT(
-   po/Makefile.in
+AC_CONFIG_FILES([po/Makefile.in
    Makefile
    src/Makefile
    contrib/Makefile
    jwm.1
-)
+])
+AC_OUTPUT
 
 ############################################################################
 # Display the status.
@@ -596,7 +575,7 @@ echo "    XBM:      $enable_xbm"
 echo "    XPM:      $enable_xpm"
 echo "    XFT:      $enable_xft"
 echo "    XRender:  $enable_xrender"
-echo "    FriBidi:  $enable_fribidi"
+echo "    Pango:    $enable_pango"
 echo "    Shape:    $enable_shape"
 echo "    Xmu:      $enable_xmu"
 echo "    Xinerama: $enable_xinerama"

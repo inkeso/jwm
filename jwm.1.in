@@ -511,6 +511,12 @@ optimal height depending on what it contains and the layout. A negative
 value subtracts from the screen height. 0 is the default.
 .RE
 .P
+\fBscreen\fP \fIint\fP
+.RS
+The index of the screen on which to start the tray.
+0 is the default (the primary screen).
+.RE
+.P
 \fBlayer\fP { \fBbelow\fP | \fBnormal\fP | \fBabove\fP }
 .RS
 The layer of the tray. The default is \fBabove\fP.
@@ -943,6 +949,12 @@ Causes the pager to ignore windows in this group.
 .B nomax
 .RS
 Prevent windows in this group from being maximized.
+.RE
+
+.P
+.B nomaxborder
+.RS
+Do not show a border on maximized windows in this group.
 .RE
 
 .P
@@ -1568,7 +1580,7 @@ The background color. See the \fBCOLORS\fP section for more information.
 .RS
 Fonts for various parts of JWM are specified within a \fBFont\fP tag. The
 text of this tag determines the font to use.
-This can be either a standard X font string or, if compiled with XFT
+This can be either an XLFD font string or, if compiled with Pango
 support, an XFT font string.
 .RE
 
@@ -1726,6 +1738,8 @@ Resize the south-west corner
 .IP \fBresize:se\fP
 Resize the south-east corner
 .RE
+.IP \fBcenter\fP
+Center the current window.
 .IP \fBroot:\fP\fIn\fP
 Show root menu \fIn\fP.
 .IP \fBwindow\fP
