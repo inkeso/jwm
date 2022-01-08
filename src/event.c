@@ -882,7 +882,7 @@ void HandleConfigureRequest(const XConfigureRequestEvent *event)
       }
       if(resized) {
          /* The size changed so the parent will need to be redrawn. */
-         ConstrainSize(np);
+         //ConstrainSize(np);
          ConstrainPosition(np);
          ResetBorder(np);
       } else {
