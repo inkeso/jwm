@@ -797,6 +797,14 @@ screen.
 .RE
 
 .P
+\fBbackground:\fP\fIstring\fP
+.RS
+Set the background color (gradient) for windows in this group.
+(#RRGGBB:#RRGGBB two hex-triplets separeted by ":")
+
+.RE
+
+.P
 .B border
 .RS
 Causes windows in this group to have a border.
@@ -998,6 +1006,13 @@ Ignore the urgent hint for windows in this group.
 .RS
 Set the opacity for windows in this group.
 The value is a number between 0.0 and 1.0 inclusive.
+.RE
+
+.P
+\fBoutline:\fP\fIstring\fP
+.RS
+Set the outline color for windows in this group.
+(#RRGGBB hex-triplet)
 .RE
 
 .P

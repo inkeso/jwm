@@ -5,12 +5,11 @@
     <RootMenu onroot="12">
         <Program icon="utilities-terminal" label="Terminal">xterm</Program>
         <Menu icon="folder" label="Applications">
-            <Program icon="sound" label="Audacious">audacious</Program>
-            <Program icon="calc" label="Calculator">xcalc</Program>
-            <Program icon="web-browser" label="Firefox">firefox</Program>
-            <Program icon="image" label="Gimp">gimp</Program>
-            <Program icon="email" label="Mail">claws-mail</Program>
-            <Program icon="system-file-manager" label="ROX">rox ~</Program>
+            <Include>exec:echo '&lt;JWM&gt;';
+               xdg_menu --format jwm --root-menu /etc/xdg/menus/arch-applications.menu |
+               sed 's/&amp;/&amp;amp;/g' ;
+               echo '&lt;/JWM&gt;'
+            </Include>
         </Menu>
         <Menu icon="folder" label="Utilities">
             <Program icon="font" label="Fonts">xfontsel</Program>
