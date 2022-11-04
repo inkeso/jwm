@@ -435,7 +435,11 @@ void RestoreTransients(ClientNode *np, char raise)
    Assert(np);
 
    /* Make sure this window is on the current desktop. */
-   SetClientDesktop(np, currentDesktop);
+   // Instead of moving window to current desktop, switch to desktop with window (Außer wenn sticky!!)
+   //SetClientDesktop(np, currentDesktop);
+   if(!(np->state.status & STAT_STICKY)) {
+      ChangeDesktop(np->state.desktop);
+   }
 
    /* Restore this window. */
    if(!(np->state.status & STAT_MAPPED)) {
