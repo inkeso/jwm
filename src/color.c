@@ -23,6 +23,8 @@ typedef struct {
 unsigned long colors[COLOR_COUNT];
 static unsigned long rgbColors[COLOR_COUNT];
 
+GradientDirection gradients[COLOR_COUNT];
+
 /* Map a linear 8-bit RGB space to pixel values. */
 static unsigned long *rgbToPixel;
 
@@ -38,6 +40,7 @@ static XftColor *xftColors[COLOR_COUNT] = { NULL };
 #define THEME_ACTIVE2      0x004488
 #define THEME_INACTIVE     0x555555
 #define THEME_INACTIVE2    0x333333
+#define THEME_INACTIVE3    0x111111
 #define THEME_OUTLINE      0x000000
 
 static const DefaultColorNode DEFAULT_COLORS[] = {
@@ -63,6 +66,9 @@ static const DefaultColorNode DEFAULT_COLORS[] = {
    { COLOR_TASKLIST_ACTIVE_FG,      THEME_TEXT        },
    { COLOR_TASKLIST_ACTIVE_BG1,     THEME_ACTIVE      },
    { COLOR_TASKLIST_ACTIVE_BG2,     THEME_ACTIVE      },
+   { COLOR_TASKLIST_MINIMIZED_FG,   THEME_TEXT        },
+   { COLOR_TASKLIST_MINIMIZED_BG1,  THEME_INACTIVE3   },
+   { COLOR_TASKLIST_MINIMIZED_BG2,  THEME_INACTIVE3   },
 
    { COLOR_TRAYBUTTON_FG,           THEME_TEXT        },
    { COLOR_TRAYBUTTON_BG1,          THEME_INACTIVE    },
@@ -121,7 +127,12 @@ static struct {
    { COLOR_TRAY_UP,           COLOR_TRAYBUTTON_UP           },
    { COLOR_TRAY_DOWN,         COLOR_TRAYBUTTON_DOWN         },
    { COLOR_TRAY_ACTIVE_UP,    COLOR_TRAYBUTTON_ACTIVE_UP    },
-   { COLOR_TRAY_ACTIVE_DOWN,  COLOR_TRAYBUTTON_ACTIVE_DOWN  }
+   { COLOR_TRAY_ACTIVE_DOWN,  COLOR_TRAYBUTTON_ACTIVE_DOWN  },
+   { COLOR_TASKLIST_FG,       COLOR_TASKLIST_MINIMIZED_FG   },
+   { COLOR_TASKLIST_BG1,      COLOR_TASKLIST_MINIMIZED_BG1  },
+   { COLOR_TASKLIST_BG2,      COLOR_TASKLIST_MINIMIZED_BG2  },
+   { COLOR_TASKLIST_UP,       COLOR_TASKLIST_MINIMIZED_UP   },
+   { COLOR_TASKLIST_DOWN,     COLOR_TASKLIST_MINIMIZED_DOWN }
 };
 static const unsigned INHERITED_COUNT = ARRAY_LENGTH(INHERITED_COLORS);
 
@@ -137,6 +148,8 @@ static struct {
    { COLOR_TASKLIST_BG1,     COLOR_TASKLIST_UP,     COLOR_TASKLIST_DOWN     },
    { COLOR_TASKLIST_ACTIVE_BG1,
         COLOR_TASKLIST_ACTIVE_UP,   COLOR_TASKLIST_ACTIVE_DOWN              },
+   { COLOR_TASKLIST_MINIMIZED_BG1,
+        COLOR_TASKLIST_MINIMIZED_UP,   COLOR_TASKLIST_MINIMIZED_DOWN        },
    { COLOR_TRAYBUTTON_BG1,   COLOR_TRAYBUTTON_UP,   COLOR_TRAYBUTTON_DOWN   },
    { COLOR_TRAYBUTTON_ACTIVE_BG1,
         COLOR_TRAYBUTTON_ACTIVE_UP, COLOR_TRAYBUTTON_ACTIVE_DOWN            },
@@ -211,6 +224,7 @@ void StartupColors(void)
          if(!names[dest]) {
             const ColorType src = INHERITED_COLORS[x].src;
             names[dest] = CopyString(names[src]);
+            gradients[dest] = gradients[src];
          }
       }
    }
@@ -347,6 +361,13 @@ void SetColor(ColorType c, const char *value)
    }
 
    names[c] = CopyString(value);
+}
+
+/** Set the gradient direction to use for a pair of colors. */
+void SetGradient(ColorType a, ColorType b, GradientDirection d)
+{
+   gradients[a] = d;
+   gradients[b] = d;
 }
 
 /** Parse a color without lookup. */

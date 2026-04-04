@@ -70,7 +70,7 @@ Menu *CreateMenu()
    menu->items = NULL;
    menu->label = NULL;
    menu->dynamic = NULL;
-   menu->timeout_ms = DEFAULT_TIMEOUT_MS;
+   menu->timeout_ms = MENU_TIMEOUT_MS;
    return menu;
 }
 
@@ -166,7 +166,7 @@ void InitializeMenu(Menu *menu)
          np->icon = &emptyIcon;
       }
       if(np->submenu) {
-         hasSubmenu = (menu->itemHeight + 3) / 4;
+         hasSubmenu = (hasIcon ? menu->itemHeight / 3 : menu->itemHeight / 2 + 4);
          InitializeMenu(np->submenu);
       }
    }
@@ -853,6 +853,7 @@ void DrawMenuItem(Menu *menu, MenuItem *item, int index)
          button.type = BUTTON_LABEL;
          button.text = menu->label;
          button.alignment = ALIGN_CENTER;
+         button.labelPos = LABEL_POSITION_RIGHT;
          DrawButton(&button);
       }
       return;

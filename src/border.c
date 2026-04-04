@@ -38,15 +38,15 @@ static char DrawBorderIcon(BorderIconType t,
                            unsigned xoffset, unsigned yoffset,
                            Pixmap canvas, long fg);
 static void DrawIconButton(const ClientNode *np, int x, int y,
-                           Pixmap canvas, GC gc, long fg);
+                           Pixmap canvas, GC gc, long fg, char active);
 static void DrawCloseButton(unsigned xoffset, unsigned yoffset,
-                            Pixmap canvas, GC gc, long fg);
+                            Pixmap canvas, GC gc, long fg, char active);
 static void DrawMaxIButton(unsigned xoffset, unsigned yoffset,
-                           Pixmap canvas, GC gc, long fg);
+                           Pixmap canvas, GC gc, long fg, char active);
 static void DrawMaxAButton(unsigned xoffset, unsigned yoffset,
-                           Pixmap canvas, GC gc, long fg);
+                           Pixmap canvas, GC gc, long fg, char active);
 static void DrawMinButton(unsigned xoffset, unsigned yoffset,
-                          Pixmap canvas, GC gc, long fg);
+                          Pixmap canvas, GC gc, long fg, char active);
 
 #ifdef USE_SHAPE
 static void FillRoundedRectangle(Drawable d, GC gc, int x, int y,
@@ -390,6 +390,7 @@ void DrawBorderHelper(const ClientNode *np)
 
    long titleColor1, titleColor2;
    long outlineColor;
+   GradientDirection gradient;
 
    int north, south, east, west;
    unsigned int width, height;
@@ -421,13 +422,13 @@ void DrawBorderHelper(const ClientNode *np)
       if (np->tcolors.outline) {
          outlineColor = np->tcolors.outline;
       }
+      gradient = gradients[COLOR_TITLE_ACTIVE_BG1];
    } else {
-
       borderTextColor = COLOR_TITLE_FG;
       titleColor1 = colors[COLOR_TITLE_BG1];
       titleColor2 = colors[COLOR_TITLE_BG2];
       outlineColor = colors[COLOR_TITLE_DOWN];
-
+      gradient = gradients[COLOR_TITLE_BG1];
    }
 
    /* Set parent background to reduce flicker. */
@@ -442,13 +443,17 @@ void DrawBorderHelper(const ClientNode *np)
 
    /* Draw the top part (either a title or north border). */
    if((np->state.border & BORDER_TITLE) &&
+      !(np->state.maxFlags && (np->state.border & TITLE_NOMAX)) &&
       titleHeight > settings.borderWidth) {
 
       XPoint point;
+      const unsigned gradientHeight
+        = settings.windowDecorations == DECO_MOTIF
+        ? titleHeight + settings.borderWidth : titleHeight;
 
       /* Draw a title bar. */
-      DrawHorizontalGradient(canvas, gc, titleColor1, titleColor2,
-                             0, 1, width, titleHeight - 2);
+      DrawGradient(canvas, gc, titleColor1, titleColor2,
+                   0, 0, width, gradientHeight, gradient);
 
       /* Draw the buttons.
        * This returns the start and end positions of the title as `x` and `y`.
@@ -459,7 +464,18 @@ void DrawBorderHelper(const ClientNode *np)
       if(np->name && np->name[0] && point.x < point.y) {
          unsigned titleWidth = point.y - point.x;
          const int sheight = GetStringHeight(FONT_BORDER);
-         const int textWidth = GetStringWidth(FONT_BORDER, np->name);
+         char *titleBuffer;
+         if (settings.showClientName && np->clientName && np->clientName[0]){
+             /* Space for 2 delimiters, space, terminator, and strings */
+             const size_t buffSize = strlen(np->name) + strlen(np->clientName) + 4;
+             titleBuffer = Allocate(buffSize);
+             sprintf(titleBuffer,"%s %c%s%c",np->name,
+                     settings.clientNameDelimiters[0],np->clientName,
+                     settings.clientNameDelimiters[1]);
+         } else {
+             titleBuffer = CopyString(np->name);
+         }
+         const int textWidth = GetStringWidth(FONT_BORDER,titleBuffer);
          unsigned titlex, titley;
          int xoffset = 0;
 
@@ -482,7 +498,8 @@ void DrawBorderHelper(const ClientNode *np)
             titley += south - 1;
          }
          RenderString(canvas, FONT_BORDER, borderTextColor,
-                      titlex, titley, titleWidth, np->name);
+                      titlex, titley, titleWidth, titleBuffer);
+         Release(titleBuffer);
       }
 
    }
@@ -780,23 +797,25 @@ void DrawBorderHandles(const ClientNode *np, Pixmap canvas, GC gc)
 void DrawBorderButton(const ClientNode *np, MouseContextType context,
                       int x, int y, Pixmap canvas, GC gc, long fg)
 {
+  const char isActive = (np->state.status & STAT_ACTIVE)
+                      && IsClientOnCurrentDesktop(np);
    JXSetForeground(display, gc, fg);
    switch(context) {
    case MC_CLOSE:
-      DrawCloseButton(x, y, canvas, gc, fg);
+      DrawCloseButton(x, y, canvas, gc, fg, isActive);
       break;
    case MC_MINIMIZE:
-      DrawMinButton(x, y, canvas, gc, fg);
+      DrawMinButton(x, y, canvas, gc, fg, isActive);
       break;
    case MC_MAXIMIZE:
       if(np->state.maxFlags) {
-         DrawMaxAButton(x, y, canvas, gc, fg);
+         DrawMaxAButton(x, y, canvas, gc, fg, isActive);
       } else {
-         DrawMaxIButton(x, y, canvas, gc, fg);
+         DrawMaxIButton(x, y, canvas, gc, fg, isActive);
       }
       break;
    case MC_ICON:
-      DrawIconButton(np, x, y, canvas, gc, fg);
+      DrawIconButton(np, x, y, canvas, gc, fg, isActive);
       break;
    default:
       Assert(0);
@@ -907,7 +926,7 @@ XPoint DrawBorderButtons(const ClientNode *np, Pixmap canvas, GC gc)
    /* Draw buttons to the right of the title. */
    rightOffset = np->width + west;
    while(index > titleIndex) {
-      const int nextOffset = rightOffset - titleHeight - 1;
+      const int nextOffset = rightOffset - titleHeight;
       const MouseContextType context = settings.titleBarLayout[index];
       if(context == MC_MOVE) {
          /* Hit the title bar from the right. */
@@ -920,7 +939,7 @@ XPoint DrawBorderButtons(const ClientNode *np, Pixmap canvas, GC gc)
 
       if(IsContextEnabled(context, np)) {
          rightOffset = nextOffset;
-         DrawLeftButton(np, context, rightOffset, yoffset, canvas, gc, fg);
+         DrawLeftButton(np, context, rightOffset - 1, yoffset, canvas, gc, fg);
       }
 
       index -= 1;
@@ -944,7 +963,7 @@ char DrawBorderIcon(BorderIconType t,
 #ifdef USE_ICONS
       const unsigned titleHeight = GetTitleHeight();
       PutIcon(buttonIcons[t], canvas, fg, xoffset + 2, yoffset + 2,
-              titleHeight - 4, titleHeight - 4);
+              titleHeight - 2, titleHeight - 2);
 #endif
       return 1;
    } else {
@@ -954,7 +973,7 @@ char DrawBorderIcon(BorderIconType t,
 
 /** Draw a close button. */
 void DrawCloseButton(unsigned xoffset, unsigned yoffset,
-                     Pixmap canvas, GC gc, long fg)
+                     Pixmap canvas, GC gc, long fg, char active)
 {
    XSegment segments[2];
    const unsigned titleHeight = GetTitleHeight();
@@ -962,7 +981,9 @@ void DrawCloseButton(unsigned xoffset, unsigned yoffset,
    unsigned x1, y1;
    unsigned x2, y2;
 
-   if(DrawBorderIcon(BI_CLOSE, xoffset, yoffset, canvas, fg)) {
+   if(active && DrawBorderIcon(BI_CLOSE_FOCUS, xoffset, yoffset, canvas, fg)) {
+      return;
+   } else if(DrawBorderIcon(BI_CLOSE, xoffset, yoffset, canvas, fg)) {
       return;
    }
 
@@ -992,7 +1013,7 @@ void DrawCloseButton(unsigned xoffset, unsigned yoffset,
 
 /** Draw an inactive maximize button. */
 void DrawMaxIButton(unsigned xoffset, unsigned yoffset,
-                    Pixmap canvas, GC gc, long fg)
+                    Pixmap canvas, GC gc, long fg, char active)
 {
 
    XSegment segments[5];
@@ -1001,7 +1022,9 @@ void DrawMaxIButton(unsigned xoffset, unsigned yoffset,
    unsigned int x1, y1;
    unsigned int x2, y2;
 
-   if(DrawBorderIcon(BI_MAX, xoffset, yoffset, canvas, fg)) {
+   if(active && DrawBorderIcon(BI_MAX_FOCUS, xoffset, yoffset, canvas, fg)) {
+      return;
+   } else if(DrawBorderIcon(BI_MAX, xoffset, yoffset, canvas, fg)) {
       return;
    }
 
@@ -1046,7 +1069,7 @@ void DrawMaxIButton(unsigned xoffset, unsigned yoffset,
 
 /** Draw an active maximize button. */
 void DrawMaxAButton(unsigned xoffset, unsigned yoffset,
-                    Pixmap canvas, GC gc, long fg)
+                    Pixmap canvas, GC gc, long fg, char active)
 {
    XSegment segments[8];
    unsigned titleHeight;
@@ -1055,7 +1078,9 @@ void DrawMaxAButton(unsigned xoffset, unsigned yoffset,
    unsigned x2, y2;
    unsigned x3, y3;
 
-   if(DrawBorderIcon(BI_MAX_ACTIVE, xoffset, yoffset, canvas, fg)) {
+   if(active && DrawBorderIcon(BI_MAX_ACTIVE_FOCUS, xoffset, yoffset, canvas, fg)) {
+      return;
+   } else if(DrawBorderIcon(BI_MAX_ACTIVE, xoffset, yoffset, canvas, fg)) {
       return;
    }
 
@@ -1117,14 +1142,16 @@ void DrawMaxAButton(unsigned xoffset, unsigned yoffset,
 
 /** Draw a minimize button. */
 void DrawMinButton(unsigned xoffset, unsigned yoffset,
-                   Pixmap canvas, GC gc, long fg)
+                   Pixmap canvas, GC gc, long fg, char active)
 {
    unsigned titleHeight;
    unsigned size;
    unsigned x1, y1;
    unsigned x2, y2;
 
-   if(DrawBorderIcon(BI_MIN, xoffset, yoffset, canvas, fg)) {
+   if(active && DrawBorderIcon(BI_MIN_FOCUS, xoffset, yoffset, canvas, fg)) {
+      return;
+   } else if(DrawBorderIcon(BI_MIN, xoffset, yoffset, canvas, fg)) {
       return;
    }
 
@@ -1144,15 +1171,25 @@ void DrawMinButton(unsigned xoffset, unsigned yoffset,
 
 /* Draw the title icon. */
 void DrawIconButton(const ClientNode *np, int x, int y,
-                    Pixmap canvas, GC gc, long fg)
+                    Pixmap canvas, GC gc, long fg, char active)
 {
 #ifdef USE_ICONS
-   const int iconSize = GetBorderIconSize();
+   const char hasIcon = np->icon ? 1 : 0;
    const int titleHeight = GetTitleHeight();
-   IconNode *icon = np->icon ? np->icon : buttonIcons[BI_MENU];
+   const int iconSize = hasIcon ? GetBorderIconSize() : Max((int)titleHeight - 2, 0);
+   const int iconXOffset = (titleHeight - iconSize) / 2;
+   const int iconYOffset = hasIcon ? iconXOffset : iconXOffset + 1;
+   IconNode *icon;
+   if(hasIcon) {
+      icon = np->icon;
+   } else if(active && (buttonIcons[BI_MENU_FOCUS] != NULL)) {
+      icon = buttonIcons[BI_MENU_FOCUS];
+   } else {
+      icon = buttonIcons[BI_MENU];
+   }
    PutIcon(icon, canvas, fg,
-           x + (titleHeight - iconSize) / 2,
-           y + (titleHeight - iconSize) / 2,
+           x + iconXOffset,
+           y + iconYOffset,
            iconSize, iconSize);
 #endif
 }
@@ -1208,7 +1245,8 @@ void GetBorderSize(const ClientState *state,
       const char show_border =
          !state->maxFlags || !(state->border & BORDER_NOMAX);
 
-      if(state->border & BORDER_TITLE) {
+      if((state->border & BORDER_TITLE) &&
+         !(state->maxFlags && (state->border & TITLE_NOMAX))) {
          *north = GetTitleHeight();
       } else if(settings.windowDecorations == DECO_MOTIF) {
          *north = 0;

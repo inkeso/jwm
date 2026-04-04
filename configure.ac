@@ -2,12 +2,13 @@
 # JWM autoconf.
 ############################################################################
 
-AC_INIT([jwm],[2.4.1],[joewing@joewing.net])
-AC_PREREQ([2.71])
+AC_INIT([jwm],[2.4.7],[joewing@joewing.net])
+AC_PREREQ([2.69])
 AC_CONFIG_SRCDIR([src])
 AC_CONFIG_SRCDIR([po])
 AC_CONFIG_HEADERS([config.h])
 AC_LANG(C)
+AM_INIT_AUTOMAKE
 
 AC_PROG_CC
 AC_PROG_CPP

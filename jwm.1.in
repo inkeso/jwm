@@ -687,6 +687,14 @@ Determines if a label is shown for items in the task list.
 The default is true.
 .RE
 .P
+\fBlabelpos\fP \fIstring\fP
+.RS
+Determines the label position in the task list. The default is "right" where
+the icon is on the left and the label is on the right.
+Possible values are "right", "top" and "bottom". When the tray is vertical and "top"
+or "bottom" is chosen, an alternate method for resizing the task list will be used.
+.RE
+.P
 \fBmaxwidth\fP \fIint\fP
 .RS
 The maximum width of an item in the task list. 0 indicates no maximum.
@@ -784,6 +792,10 @@ toolbar, utility.
 .RS
 The machine on which a program runs to match to be in this group.
 (the string WM_CLIENT_MACHINE)
+.RE
+.B Title
+.RS
+The window title for a program to match to be in this group (string in WM_NAME)
 .RE
 .B Option
 .RS
@@ -966,6 +978,12 @@ Do not show a border on maximized windows in this group.
 .RE
 
 .P
+.B nomaxtitle
+.RS
+Do not show a title bar on maximized windows in this group.
+.RE
+
+.P
 .B nomin
 .RS
 Prevent windows in this group from being minimized.
@@ -1079,12 +1097,24 @@ that the value is relative to the bottom of the screen.
 .B "WINDOW STYLE"
 .RS
 The \fBWindowStyle\fP tag controls the look of window borders.
-This tag supports the following attribute:
+This tag supports the following attributes:
 .P
 .B decorations
 .RS
 The window decorations to use. Valid options are \fBflat\fP and
 \fBmotif\fP. \fBflat\fP is the default.
+.RE
+.P
+.B showclient
+.RS
+Include the X client machine name (WM_CLIENT_MACHINE) in the window title.
+Valid options are \fBtrue\fP and \fBfalse\fP. \fBfalse\fP is the default.
+.RE
+.P
+.B delimiters
+.RS
+The two characters used to wrap the X client machine name in the window title.
+The default characters are \fB()\fP.
 .RE
 .P
 Within this tag, the following tags are supported:
@@ -1262,7 +1292,7 @@ respectively.
 .B "TASK LIST STYLE"
 .RS
 The \fBTaskListStyle\fP tag controls the look of task lists.
-The following attributea are supported:
+The following attributes are supported:
 .P
 .B decorations
 .RS
@@ -1282,6 +1312,13 @@ is \fBfalse\fP.
 Determines which windows are shown in task bars.
 Possible values are \fBdesktop\fP and \fBall\fP. The default
 is \fBdesktop\fP.
+.RE
+.P
+.B showkill
+.RS
+Determines if the \fBKill\fP popup menu item is shown on task bars and
+window title bars. Possible values are \fBtrue\fP and \fBfalse\fP. The default
+is \fBtrue\fP.
 .RE
 .P
 Within this tag the following tags are supported:
@@ -1331,6 +1368,33 @@ The background color for active items.
 .B Outline
 .RS
 The outline color for active items. See the \fBCOLORS\fP section for
+more information.
+The default is a darkened version of the background.
+If \fBmotif\fP tray decorations are specified, this may be given as
+two colors separated by a ':' to indicate the down and up colors
+respectively.
+.RE
+.RE
+.P
+.B Minimized
+.RS
+The colors for the minimized items.
+See the \fBCOLORS\fP section for more information.
+The following tags are supported:
+.P
+.B Foreground
+.RS
+The foreground color for minimized items.
+.RE
+.P
+.B Background
+.RS
+The background color for minimized items.
+.RE
+.P
+.B Outline
+.RS
+The outline color for minimized items. See the \fBCOLORS\fP section for
 more information.
 The default is a darkened version of the background.
 If \fBmotif\fP tray decorations are specified, this may be given as
@@ -1605,7 +1669,8 @@ Colors for various parts of JWM are specified within specific tags
 (described above). Colors may either be hex triplets in RGB format
 (for example, #FF0000 is red) or by a name recognized by the X server.
 For components that support gradients, two colors may be specified
-separated by a colon.
+separated by a colon for a horizontal gradient or a semicolon for a
+vertical gradient.
 .RE
 
 .B ICONS
@@ -1693,8 +1758,12 @@ Remove the current binding.
 Move to the previous window in the task list.
 .IP \fBprevstacked\fP
 Move to the previous window in the stacking order.
+.IP \fBat#\fP
+Move to window position in the task list.
 .IP \fBclose\fP
 Close the active window.
+.IP \fBkill\fP
+Kill the active window.
 .IP \fBminimize\fP
 Minimize the active window.
 .IP \fBmaximize\fP
@@ -1705,8 +1774,16 @@ Maximize the active window vertically.
 Maximize the active window horizontally.
 .IP \fBmaxtop\fP
 Maximize the active window to the top of the screen.
+.IP \fBmaxtopleft\fP
+Maximize the active window to the top left of the screen.
+.IP \fBmaxtopright\fP
+Maximize the active window to the top right of the screen.
 .IP \fBmaxbottom\fP
 Maximize the active window to the bottom of the screen.
+.IP \fBmaxbottomleft\fP
+Maximize the active window to the bottom left of the screen.
+.IP \fBmaxbottomright\fP
+Maximize the active window to the bottom right of the screen.
 .IP \fBmaxleft\fP
 Maximize the active window to the left of the screen.
 .IP \fBmaxright\fP
@@ -1845,6 +1922,7 @@ Over a pager, switches the active desktop.
 .P
 Button 2 (typically the middle button):
 .RS
+Over a task bar, closes the window.
 Over a pager, switches the active desktop.
 .RE
 .P
@@ -1876,6 +1954,15 @@ The default is 4.
 .RS
 The number of virtual desktops in the vertical direction. 
 The default is 1.
+.RE
+.P
+\fBbackandforth\fP \fIstring\fP
+.RS
+Controls whether changing the desktop to the currently active desktop using
+the \fBdesktop#\fP action should instead switch to the previously active
+desktop.
+Default is "off" to do nothing when switching to the currently active desktop.
+Possible values are "on" and "off".
 .RE
 .P
 Within the \fBDesktops\fP tag the following tags are supported:
@@ -1934,25 +2021,50 @@ The following tags may also be supplied:
 An icon to display for the close button on client windows instead of the
 default.
 .RE
+.B ButtonCloseFocus
+.RS
+An icon to display for the close button on active client windows instead
+of the default.
+.RE
 .B ButtonMax
 .RS
 An icon to display for the maximize button on client windows instead of the
 default.
+.RE
+.B ButtonMaxFocus
+.RS
+An icon to display for the maximize button on active client windows instead
+of the default.
 .RE
 .B ButtonMaxActive
 .RS
 An icon to display for the maximize button on maximized client windows instead
 of the default.
 .RE
+.B ButtonMaxActiveFocus
+.RS
+An icon to display for the maximize button on active maximized client windows
+instead of the default.
+.RE
 .B ButtonMenu
 .RS
 An icon to display for the menu button on client windows instead of the
 default. This is used for client windows that do not specify an icon.
 .RE
+.B ButtonMenuFocus
+.RS
+An icon to display for the menu button on active client windows instead
+of the default. This is used for client windows that do not specify an icon.
+.RE
 .B ButtonMin
 .RS
 An icon to display for the minimize button on client windows instead
 of the default.
+.RE
+.B ButtonMinFocus
+.RS
+An icon to display for the minimize button on active client windows
+instead of the default.
 .RE
 .B DefaultIcon
 .RS

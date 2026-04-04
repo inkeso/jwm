@@ -22,7 +22,8 @@ typedef unsigned int MatchType;
 #define MATCH_NAME      0  /**< Match the window name. */
 #define MATCH_CLASS     1  /**< Match the window class. */
 #define MATCH_TYPE      2  /**< Match the window type. */
-#define MATCH_MACHINE   3  /**< Match the window machine. */
+#define MATCH_MACHINE   3  /**< Match the window client machine name. */
+#define MATCH_TITLE     4  /**< Match the window title. */
 
 /** List of match patterns for a group. */
 typedef struct PatternListType {
@@ -130,6 +131,17 @@ void AddGroupName(GroupType *gp, const char *pattern)
    }
 }
 
+/** Add a window title to a group. */
+void AddGroupTitle(GroupType *gp, const char *pattern)
+{
+   Assert(gp);
+   if(JLIKELY(pattern)) {
+      AddPattern(&gp->patterns, pattern, MATCH_TITLE);
+   } else {
+      Warning(_("invalid group name"));
+   }
+}
+
 /** Add a window type to a group. */
 void AddGroupType(GroupType *gp, const char *pattern)
 {
@@ -141,7 +153,7 @@ void AddGroupType(GroupType *gp, const char *pattern)
    }
 }
 
-/** Add a window machine to a group. */
+/** Add a window client machine to a group. */
 void AddGroupMachine(GroupType *gp, const char *pattern)
 {
    Assert(gp);
@@ -224,12 +236,14 @@ void ApplyGroups(ClientNode *np)
    GroupType *gp;
    char hasClass;
    char hasName;
+   char hasTitle;
    char hasType;
-   char hasMachine;
+   char hasClient;
    char matchesClass;
    char matchesName;
+   char matchesTitle;
    char matchesType;
-   char matchesMachine;
+   char matchesClient;
 
    static const StringMappingType windowTypeMapping[] = {
       { "desktop",      WINDOW_TYPE_DESKTOP      },
@@ -248,11 +262,13 @@ void ApplyGroups(ClientNode *np)
       hasClass = 0;
       hasName = 0;
       hasType = 0;
-      hasMachine = 0;
+      hasTitle = 0;
+      hasClient = 0;
       matchesClass = 0;
       matchesName = 0;
+      matchesTitle = 0;
       matchesType = 0;
-      matchesMachine = 0;
+      matchesClient = 0;
       for(lp = gp->patterns; lp; lp = lp->next) {
          if(lp->match == MATCH_CLASS) {
             if(Match(lp->pattern, np->className)) {
@@ -264,6 +280,11 @@ void ApplyGroups(ClientNode *np)
                matchesName = 1;
             }
             hasName = 1;
+         } else if(lp->match == MATCH_TITLE) {
+            if(Match(lp->pattern, np->name)) {
+               matchesTitle = 1;
+            }
+            hasTitle = 1;
          } else if(lp->match == MATCH_TYPE) {
              if(FindValue(windowTypeMapping, WINDOW_TYPE_COUNT, lp->pattern)
              == np->state.windowType) {
@@ -271,16 +292,19 @@ void ApplyGroups(ClientNode *np)
              }
              hasType = 1;
          } else if(lp->match == MATCH_MACHINE) {
-            if(Match(lp->pattern, np->machineName)) {
-               matchesMachine = 1;
+            if(Match(lp->pattern, np->clientName)) {
+               matchesClient = 1;
             }
-             hasMachine = 1;
+             hasClient = 1;
          } else {
             Debug("invalid match in ApplyGroups: %d", lp->match);
          }
       }
-      if(hasName == matchesName && hasClass == matchesClass
-      && hasType == matchesType && hasMachine == matchesMachine) {
+      if(hasName == matchesName
+      && hasClass == matchesClass
+      && hasTitle == matchesTitle
+      && hasType == matchesType
+      && hasClient == matchesClient) {
          ApplyGroup(gp, np);
       }
    }
@@ -487,6 +511,9 @@ void ApplyGroup(const GroupType *gp, ClientNode *np)
       case OPTION_OUTLINE:
          ParseColor(lp->str, &tmpcol);
          np->tcolors.outline = tmpcol.pixel;
+         break;
+      case OPTION_NOMAXTITLE:
+         np->state.border |= TITLE_NOMAX;
          break;
       default:
          Debug("invalid option: %d", lp->option);

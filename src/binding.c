@@ -74,7 +74,7 @@ static KeyNode *bindings[MC_COUNT];
 unsigned lockMask;
 
 static unsigned int GetModifierMask(XModifierKeymap *modmap, KeySym key);
-static KeySym ParseKeyString(const char *str);
+static KeySym ParseKeyString(const char *str, const char* fileName, int line);
 static char ShouldGrab(ActionType key);
 static void GrabKey(KeyNode *np, Window win);
 
@@ -299,13 +299,19 @@ char ShouldGrab(ActionType action)
    case ACTION_SENDU:
    case ACTION_SENDD:
    case ACTION_MAXTOP:
+   case ACTION_MAXTOPLEFT:
+   case ACTION_MAXTOPRIGHT:
    case ACTION_MAXBOTTOM:
+   case ACTION_MAXBOTTOMLEFT:
+   case ACTION_MAXBOTTOMRIGHT:
    case ACTION_MAXLEFT:
    case ACTION_MAXRIGHT:
    case ACTION_MAXV:
    case ACTION_MAXH:
    case ACTION_RESTORE:
    case ACTION_CENTER:
+   case ACTION_AT:
+   case ACTION_KILL:
       return 1;
    default:
       return 0;
@@ -365,12 +371,12 @@ unsigned int ParseModifierString(const char *str)
 }
 
 /** Parse a key string. */
-KeySym ParseKeyString(const char *str)
+KeySym ParseKeyString(const char *str, const char* fileName, int line)
 {
    KeySym symbol;
    symbol = JXStringToKeysym(str);
    if(JUNLIKELY(symbol == NoSymbol)) {
-      Warning(_("invalid key symbol: \"%s\""), str);
+      Warning(_("%s[%u]: invalid key symbol: \"%s\""), fileName, line, str);
    }
    return symbol;
 }
@@ -399,7 +405,7 @@ void RemoveDuplicates(KeyNode *bp)
 /** Insert a key binding. */
 void InsertBinding(ActionType action, const char *modifiers,
                    const char *stroke, const char *code,
-                   const char *command)
+                   const char *command, const char *fileName, int line)
 {
 
    KeyNode *np;
@@ -419,7 +425,7 @@ void InsertBinding(ActionType action, const char *modifiers,
 
             for(temp[offset] = '1'; temp[offset] <= '9'; temp[offset]++) {
 
-               sym = ParseKeyString(temp);
+               sym = ParseKeyString(temp, fileName, line);
                if(sym == NoSymbol) {
                   Release(temp);
                   return;
@@ -446,7 +452,7 @@ void InsertBinding(ActionType action, const char *modifiers,
          }
       }
 
-      sym = ParseKeyString(stroke);
+      sym = ParseKeyString(stroke, fileName, line);
       if(sym == NoSymbol) {
          return;
       }

@@ -79,9 +79,15 @@ typedef unsigned char MouseContextType;
 #define MC_BORDER_E        0x40  /**< East border. */
 #define MC_BORDER_W        0x80  /**< West border. */
 
-/** Maximimum number of title bar components
+/** Enumeration of desktop back and forth values. */
+typedef unsigned char DesktopBackAndForthType;
+#define DBACKANDFORTH_OFF 0 /**< No back and forth */
+#define DBACKANDFORTH_ON  1 /**< Enable back and forth */
+
+/** Maximum number of title bar components
  * For now, we allow each component to be used twice. */
 #define TBC_COUNT       9
+
 
 /** Settings. */
 typedef struct {
@@ -117,6 +123,10 @@ typedef struct {
    MouseContextType titleBarLayout[TBC_COUNT + 1];
    char groupTasks;
    char listAllTasks;
+   char showClientName;
+   char clientNameDelimiters[2];
+   char showKillMenuItem;
+   DesktopBackAndForthType desktopBackAndForth;
 } Settings;
 
 extern Settings settings;

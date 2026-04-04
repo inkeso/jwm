@@ -60,6 +60,7 @@ typedef unsigned char OptionType;
 #define OPTION_NOMAXBORDER    42    /**< No border on maximized windows. */
 #define OPTION_OUTLINE        43    /**< Different bordercolor */
 #define OPTION_BACKGROUND     44    /**< Different background color for titlebar. */
+#define OPTION_NOMAXTITLE     45    /**< No title on maximized windows. */
 
 /*@{*/
 #define InitializeGroups() (void)(0)
@@ -84,6 +85,12 @@ void AddGroupClass(struct GroupType *gp, const char *pattern);
  * @param pattern A pattern to match with the window name.
  */
 void AddGroupName(struct GroupType *gp, const char *pattern);
+
+/** Add a window title to a group.
+ * @param gp The group.
+ * @param pattern A pattern to match with the window title.
+ */
+void AddGroupTitle(struct GroupType *gp, const char *pattern);
 
 /** Add a window type to a group.
  * @param gp The group.

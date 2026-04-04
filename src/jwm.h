@@ -100,9 +100,6 @@
 #  ifdef USE_XRENDER
 #     include <X11/extensions/Xrender.h>
 #  endif
-#  ifdef USE_FRIBIDI
-#     include <fribidi/fribidi.h>
-#  endif
 
 #endif /* MAKE_DEPEND */
 
@@ -124,7 +121,8 @@
 #define MOVE_DELTA         3     /**< Pixels before trigging a move. */
 #define RESTART_DELAY      1000  /**< Max timeout in ms before restarting. */
 #define URGENCY_DELAY      500   /**< Flash timeout in ms for urgency. */
-#define DEFAULT_TIMEOUT_MS 5000  /**< Default pipe timeout. */
+#define MENU_TIMEOUT_MS    5000  /**< Default menu pipe timeout. */
+#define INCLUDE_TIMEOUT_MS 60000 /**< Default include pipe timeout. */
 
 #define SHELL_NAME "/bin/sh"
 

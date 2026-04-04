@@ -35,6 +35,7 @@ typedef unsigned short BorderFlags;
 #define BORDER_CONSTRAIN   (1 << 10)   /**< Constrain to the screen. */
 #define BORDER_FULLSCREEN  (1 << 11)   /**< Allow fullscreen. */
 #define BORDER_NOMAX       (1 << 12)   /**< No border on maximize. */
+#define TITLE_NOMAX        (1 << 13)   /**< No title on maximize. */
 
 /** The default border flags. */
 #define BORDER_DEFAULT (   \
@@ -154,7 +155,7 @@ typedef struct ClientNode {
    char *name;                /**< Name of this window for display. */
    char *instanceName;        /**< Name of this window for properties. */
    char *className;           /**< Name of the window class. */
-   char *machineName;         /**< Name of the machine. */
+   char *clientName;         /**< Name of the client machine. */
 
    ClientState state;         /**< Window state. */
 

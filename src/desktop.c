@@ -176,6 +176,9 @@ void ChangeDesktop(unsigned int desktop)
          }
          if(np->state.desktop == currentDesktop) {
             HideClient(np);
+            if((np->state.status & STAT_MINIMIZED) && (np->state.status & STAT_ACTIVE)) {
+               np->state.status &= ~STAT_ACTIVE;
+            }
          }
       }
    }
@@ -192,6 +195,7 @@ void ChangeDesktop(unsigned int desktop)
       }
    }
 
+   previousDesktop = currentDesktop;
    currentDesktop = desktop;
 
    SetCardinalAtom(rootWindow, ATOM_NET_CURRENT_DESKTOP, currentDesktop);
@@ -286,7 +290,7 @@ void ShowDesktop(void)
                   JXSetInputFocus(display, rootWindow, RevertToParent,
                                   CurrentTime);
                }
-               if(np->state.status & (STAT_MAPPED | STAT_SHADED)) {
+               if(np->state.status & (STAT_MAPPED | STAT_SHADED) && (np->state.border & BORDER_MIN)) {
                   MinimizeClient(np, 0);
                   np->state.status |= STAT_SDESKTOP;
                }

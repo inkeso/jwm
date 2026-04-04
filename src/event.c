@@ -84,6 +84,7 @@ static void HandleNetWMState(const XClientMessageEvent *event,
 static void HandleFrameExtentsRequest(const XClientMessageEvent *event);
 static void UpdateState(ClientNode *np);
 static void DiscardEnterEvents();
+static char ClientCanReceiveSloppyFocus(const ClientNode *np);
 
 #ifdef USE_SHAPE
 static void HandleShapeEvent(const XShapeEvent *event);
@@ -531,12 +532,18 @@ void ProcessBinding(MouseContextType context, ClientNode *np,
 {
    const ActionType key = GetKey(context, state, code);
    const char keyAction = context == MC_NONE;
+   unsigned int desktop;
    switch(key.action) {
    case ACTION_EXEC:
       RunKeyCommand(context, state, code);
       break;
    case ACTION_DESKTOP:
-      ChangeDesktop(key.extra);
+      desktop = key.extra;
+      if(currentDesktop == desktop &&
+         settings.desktopBackAndForth) {
+           desktop = previousDesktop;
+      }
+      ChangeDesktop(desktop);
       break;
    case ACTION_RDESKTOP:
       RightDesktop();
@@ -628,7 +635,7 @@ void ProcessBinding(MouseContextType context, ClientNode *np,
       }
       break;
    case ACTION_MIN:
-      if(np) {
+      if(np && (np->state.border & BORDER_MIN)) {
          MinimizeClient(np, 1);
       }
       break;
@@ -645,7 +652,7 @@ void ProcessBinding(MouseContextType context, ClientNode *np,
       if(np) {
          if(np->state.maxFlags) {
             MaximizeClient(np, MAX_NONE);
-         } else {
+         } else if(np->state.border & BORDER_MIN) {
             MinimizeClient(np, 1);
          }
       }
@@ -653,8 +660,20 @@ void ProcessBinding(MouseContextType context, ClientNode *np,
    case ACTION_MAXTOP:
       ToggleMaximized(np, MAX_TOP | MAX_HORIZ);
       break;
+   case ACTION_MAXTOPLEFT:
+      ToggleMaximized(np, MAX_TOP | MAX_LEFT);
+      break;
+   case ACTION_MAXTOPRIGHT:
+      ToggleMaximized(np, MAX_TOP | MAX_RIGHT);
+      break;
    case ACTION_MAXBOTTOM:
       ToggleMaximized(np, MAX_BOTTOM | MAX_HORIZ);
+      break;
+   case ACTION_MAXBOTTOMLEFT:
+      ToggleMaximized(np, MAX_BOTTOM | MAX_LEFT);
+      break;
+   case ACTION_MAXBOTTOMRIGHT:
+      ToggleMaximized(np, MAX_BOTTOM | MAX_RIGHT);
       break;
    case ACTION_MAXLEFT:
       ToggleMaximized(np, MAX_LEFT | MAX_VERT);
@@ -745,11 +764,20 @@ void ProcessBinding(MouseContextType context, ClientNode *np,
 
          np->x = sp->x + (sp->width - np->width) / 2;
          np->y = sp->y + (sp->height - np->height) / 2;
+         ConstrainPosition(np);
          ResetBorder(np);
          SendConfigureEvent(np);
          RequirePagerUpdate();
       }
       break;
+    case ACTION_AT:
+      StartWindowWalk();
+      FocusAt(key.extra);
+      break;
+   case ACTION_KILL:
+      KillClient(np);
+      break;
+
    default:
       break;
    }
@@ -932,6 +960,29 @@ char HandleConfigureNotify(const XConfigureEvent *event)
    return 1;
 }
 
+/** True if a window should receive focus if the pointer moves over it. */
+char ClientCanReceiveSloppyFocus(const ClientNode *np)
+{
+   /* Not if the window is already active */
+   if(np->state.status & STAT_ACTIVE) {
+      return 0;
+   }
+   /* Only when running in a sloppy focus mode */
+   if(! (settings.focusModel == FOCUS_SLOPPY
+         || settings.focusModel == FOCUS_SLOPPY_TITLE)) {
+      return 0;
+   }
+   /* The user will probably understand desktop windows as a kind of
+    * empty space. If they took focus based just on mouse motion over
+    * them, sloppy focus would feel broken. They can still be given
+    * focus with a click. */
+   if((np->state.windowType == WINDOW_TYPE_DESKTOP)
+      || (np->state.layer == LAYER_DESKTOP)) {
+      return 0;
+   }
+   return 1;
+}
+
 /** Process an enter notify event. */
 void HandleEnterNotify(const XCrossingEvent *event)
 {
@@ -939,9 +990,7 @@ void HandleEnterNotify(const XCrossingEvent *event)
    Cursor cur;
    np = FindClient(event->window);
    if(np) {
-      if(  !(np->state.status & STAT_ACTIVE)
-         && (settings.focusModel == FOCUS_SLOPPY
-            || settings.focusModel == FOCUS_SLOPPY_TITLE)) {
+      if(ClientCanReceiveSloppyFocus(np)) {
          FocusClient(np);
       }
       if(np->parent == event->window) {

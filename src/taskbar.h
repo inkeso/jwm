@@ -36,6 +36,11 @@ void RemoveClientFromTaskBar(struct ClientNode *np);
 /** Update all task bars. */
 void UpdateTaskBar(void);
 
+/** Focus the client in the task bar.
+ * @param n The window position in the taskbar.
+ */
+void FocusAt(char n);
+
 /** Focus the next client in the task bar. */
 void FocusNext(void);
 
@@ -59,6 +64,12 @@ void SetTaskBarHeight(struct TrayComponentType *cp, const char *value);
  * @param value 1 if labeled, 0 if no label is to be shown.
  */
 void SetTaskBarLabeled(struct TrayComponentType *cp, char value);
+
+/** Set where labels should be positioned in relation to the icon.
+ * @param cp The task bar component.
+ * @param value 0 for right of the icon, 1 for above the icon, 2 for below the icon.
+ */
+void SetTaskBarLabelPosition(struct TrayComponentType *cp, const char *value);
 
 /** Update the _NET_CLIENT_LIST property. */
 void UpdateNetClientList(void);

@@ -15,6 +15,7 @@
 #include "timing.h"
 
 #include <fcntl.h>
+#include <errno.h>
 
 /** Structure to represent a list of commands. */
 typedef struct CommandNode {
@@ -164,11 +165,14 @@ char *ReadFromProcess(const char *command, unsigned timeout_ms)
    pid = fork();
    if(pid == 0) {
       /* The child process. */
-      close(ConnectionNumber(display));
-      close(fds[0]);
+      if(display) {
+        close(ConnectionNumber(display));
+      }
       dup2(fds[1], 1);  /* stdout */
+      close(fds[0]);
+      close(fds[1]);
       setsid();
-      execl("/bin/sh", "/bin/sh", "-c", command, NULL);
+      execl(SHELL_NAME, SHELL_NAME, "-c", command, NULL);
       Warning(_("exec failed: (%s) %s"), SHELL_NAME, command);
       exit(EXIT_SUCCESS);
    } else if(pid > 0) {
@@ -176,6 +180,7 @@ char *ReadFromProcess(const char *command, unsigned timeout_ms)
       unsigned buffer_size, max_size;
       TimeType start_time, current_time;
 
+      close(fds[1]);
       max_size = BLOCK_SIZE;
       buffer_size = 0;
       buffer = Allocate(max_size);
@@ -185,13 +190,7 @@ char *ReadFromProcess(const char *command, unsigned timeout_ms)
          struct timeval tv;
          unsigned long diff_ms;
          fd_set fs;
-         int rc;
-
-         /* Make sure we have room to read. */
-         if(buffer_size + BLOCK_SIZE > max_size) {
-            max_size *= 2;
-            buffer = Reallocate(buffer, max_size);
-         }
+         int rc, got_read;
 
          FD_ZERO(&fs);
          FD_SET(fds[0], &fs);
@@ -204,8 +203,11 @@ char *ReadFromProcess(const char *command, unsigned timeout_ms)
          tv.tv_usec = (diff_ms % 1000) * 1000;
 
          /* Wait for data (or a timeout). */
-         rc = select(fds[0] + 1, &fs, NULL, &fs, &tv);
+         do {
+            rc = select(fds[0] + 1, &fs, NULL, &fs, &tv);
+         } while(rc < 0 && errno == EINTR);
          if(rc == 0) {
+            close(fds[0]);
             /* Timeout */
             Warning(_("timeout: %s did not complete in %u milliseconds"),
                     command, timeout_ms);
@@ -214,19 +216,20 @@ char *ReadFromProcess(const char *command, unsigned timeout_ms)
             break;
          }
 
-         rc = read(fds[0], &buffer[buffer_size], BLOCK_SIZE);
-         if(rc > 0) {
-            buffer_size += rc;
-         } else {
-            /* Process exited, check for any leftovers and return. */
-            do {
-               if(buffer_size + BLOCK_SIZE > max_size) {
-                  max_size *= 2;
-                  buffer = Reallocate(buffer, max_size);
-               }
-               rc = read(fds[0], &buffer[buffer_size], BLOCK_SIZE);
-               buffer_size += (rc > 0) ? rc : 0;
-            } while(rc > 0);
+         got_read = 0;
+         do {
+           /* Make sure we have room to read. */
+           if(buffer_size + BLOCK_SIZE > max_size) {
+              max_size *= 2;
+              buffer = Reallocate(buffer, max_size);
+           }
+           rc = read(fds[0], &buffer[buffer_size], BLOCK_SIZE);
+           buffer_size += (rc > 0) ? rc : 0;
+           got_read = got_read || rc > 0;
+         } while(rc > 0);
+         if(!got_read) {
+            /* Process exited */
+            close(fds[0]);
             break;
          }
       }

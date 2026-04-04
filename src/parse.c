@@ -43,48 +43,54 @@
  * Note that this mapping must be sorted.
  */
 static const StringMappingType ACTION_MAP[] = {
-   { "center",                ACTION_CENTER        },
-   { "close",                 ACTION_CLOSE         },
-   { "ddesktop",              ACTION_DDESKTOP      },
-   { "desktop#",              ACTION_DESKTOP       },
-   { "down",                  ACTION_DOWN          },
-   { "escape",                ACTION_ESC           },
-   { "exit",                  ACTION_EXIT          },
-   { "fullscreen",            ACTION_FULLSCREEN    },
-   { "ldesktop",              ACTION_LDESKTOP      },
-   { "left",                  ACTION_LEFT          },
-   { "maxbottom",             ACTION_MAXBOTTOM     },
-   { "maxh",                  ACTION_MAXH          },
-   { "maximize",              ACTION_MAX           },
-   { "maxleft",               ACTION_MAXLEFT       },
-   { "maxright",              ACTION_MAXRIGHT      },
-   { "maxtop",                ACTION_MAXTOP        },
-   { "maxv",                  ACTION_MAXV          },
-   { "minimize",              ACTION_MIN           },
-   { "move",                  ACTION_MOVE          },
-   { "next",                  ACTION_NEXT          },
-   { "nextstacked",           ACTION_NEXTSTACK     },
-   { "none",                  ACTION_NONE          },
-   { "prev",                  ACTION_PREV          },
-   { "prevstacked",           ACTION_PREVSTACK     },
-   { "rdesktop",              ACTION_RDESKTOP      },
-   { "resize",                ACTION_RESIZE        },
-   { "restart",               ACTION_RESTART       },
-   { "restore",               ACTION_RESTORE       },
-   { "right",                 ACTION_RIGHT         },
-   { "select",                ACTION_ENTER         },
-   { "send#",                 ACTION_SEND          },
-   { "sendd",                 ACTION_SENDD         },
-   { "sendl",                 ACTION_SENDL         },
-   { "sendr",                 ACTION_SENDR         },
-   { "sendu",                 ACTION_SENDU         },
-   { "shade",                 ACTION_SHADE         },
-   { "showdesktop",           ACTION_SHOWDESK      },
-   { "showtray",              ACTION_SHOWTRAY      },
-   { "stick",                 ACTION_STICK         },
-   { "udesktop",              ACTION_UDESKTOP      },
-   { "up",                    ACTION_UP            },
-   { "window",                ACTION_WIN           }
+   { "at#",                   ACTION_AT             },
+   { "center",                ACTION_CENTER         },
+   { "close",                 ACTION_CLOSE          },
+   { "ddesktop",              ACTION_DDESKTOP       },
+   { "desktop#",              ACTION_DESKTOP        },
+   { "down",                  ACTION_DOWN           },
+   { "escape",                ACTION_ESC            },
+   { "exit",                  ACTION_EXIT           },
+   { "fullscreen",            ACTION_FULLSCREEN     },
+   { "kill",                  ACTION_KILL           },
+   { "ldesktop",              ACTION_LDESKTOP       },
+   { "left",                  ACTION_LEFT           },
+   { "maxbottom",             ACTION_MAXBOTTOM      },
+   { "maxbottomleft",         ACTION_MAXBOTTOMLEFT  },
+   { "maxbottomright",        ACTION_MAXBOTTOMRIGHT },
+   { "maxh",                  ACTION_MAXH           },
+   { "maximize",              ACTION_MAX            },
+   { "maxleft",               ACTION_MAXLEFT        },
+   { "maxright",              ACTION_MAXRIGHT       },
+   { "maxtop",                ACTION_MAXTOP         },
+   { "maxtopleft",            ACTION_MAXTOPLEFT     },
+   { "maxtopright",           ACTION_MAXTOPRIGHT    },
+   { "maxv",                  ACTION_MAXV           },
+   { "minimize",              ACTION_MIN            },
+   { "move",                  ACTION_MOVE           },
+   { "next",                  ACTION_NEXT           },
+   { "nextstacked",           ACTION_NEXTSTACK      },
+   { "none",                  ACTION_NONE           },
+   { "prev",                  ACTION_PREV           },
+   { "prevstacked",           ACTION_PREVSTACK      },
+   { "rdesktop",              ACTION_RDESKTOP       },
+   { "resize",                ACTION_RESIZE         },
+   { "restart",               ACTION_RESTART        },
+   { "restore",               ACTION_RESTORE        },
+   { "right",                 ACTION_RIGHT          },
+   { "select",                ACTION_ENTER          },
+   { "send#",                 ACTION_SEND           },
+   { "sendd",                 ACTION_SENDD          },
+   { "sendl",                 ACTION_SENDL          },
+   { "sendr",                 ACTION_SENDR          },
+   { "sendu",                 ACTION_SENDU          },
+   { "shade",                 ACTION_SHADE          },
+   { "showdesktop",           ACTION_SHOWDESK       },
+   { "showtray",              ACTION_SHOWTRAY       },
+   { "stick",                 ACTION_STICK          },
+   { "udesktop",              ACTION_UDESKTOP       },
+   { "up",                    ACTION_UP             },
+   { "window",                ACTION_WIN            }
 };
 static const unsigned int ACTION_MAP_COUNT = ARRAY_LENGTH(ACTION_MAP);
 
@@ -127,6 +133,7 @@ static const StringMappingType OPTION_MAP[] = {
    { "nolist",             OPTION_NOLIST        },
    { "nomax",              OPTION_NOMAX         },
    { "nomaxborder",        OPTION_NOMAXBORDER   },
+   { "nomaxtitle",         OPTION_NOMAXTITLE    },
    { "nomin",              OPTION_NOMIN         },
    { "nomove",             OPTION_NOMOVE        },
    { "nopager",            OPTION_NOPAGER       },
@@ -159,6 +166,9 @@ static const char *DYNAMIC_ATTRIBUTE = "dynamic";
 static const char *SPACING_ATTRIBUTE = "spacing";
 static const char *TIMEOUT_ATTRIBUTE = "timeout";
 static const char *POPUP_ATTRIBUTE = "popup";
+static const char *CLIENTNAME_ATTRIBUTE = "showclient";
+static const char *CN_DELIMITERS_ATTRIBUTE = "delimiters";
+static const char *KILL_MENU_ATTRIBUTE = "showkill";
 
 static const char *FALSE_VALUE = "false";
 static const char *TRUE_VALUE = "true";
@@ -223,6 +233,9 @@ static void ParseTrayStyle(const TokenNode *tp,
 static void ParseActive(const TokenNode *tp, ColorType fg,
                         ColorType bg1, ColorType bg2,
                         ColorType up, ColorType down);
+static void ParseMinimized(const TokenNode *tp, ColorType fg,
+                        ColorType bg1, ColorType bg2,
+                        ColorType up, ColorType down);
 static void ParsePagerStyle(const TokenNode *tp);
 static void ParseClockStyle(const TokenNode *tp);
 static void ParseMenuStyle(const TokenNode *tp);
@@ -248,7 +261,7 @@ static int ParseAttribute(const StringMappingType *mapping, int count,
                           int def);
 static int ParseSigned(const TokenNode *tp, const char *str);
 static unsigned ParseUnsigned(const TokenNode *tp, const char *str);
-static unsigned ParseTimeout(const TokenNode *tp);
+static unsigned ParseTimeout(const TokenNode *tp, unsigned timeout_ms);
 static unsigned int ParseOpacity(const TokenNode *tp, const char *str);
 static WinLayerType ParseLayer(const TokenNode *tp, const char *str);
 static StatusWindowType ParseStatusWindowType(const TokenNode *tp);
@@ -417,17 +430,32 @@ void Parse(const TokenNode *start, int depth)
             case TOK_BUTTONCLOSE:
                SetBorderIcon(BI_CLOSE, tp->value);
                break;
+            case TOK_BUTTONCLOSEFOCUS:
+               SetBorderIcon(BI_CLOSE_FOCUS, tp->value);
+               break;
             case TOK_BUTTONMAX:
                SetBorderIcon(BI_MAX, tp->value);
                break;
             case TOK_BUTTONMAXACTIVE:
                SetBorderIcon(BI_MAX_ACTIVE, tp->value);
                break;
+            case TOK_BUTTONMAXACTIVEFOCUS:
+               SetBorderIcon(BI_MAX_ACTIVE_FOCUS, tp->value);
+               break;
+            case TOK_BUTTONMAXFOCUS:
+               SetBorderIcon(BI_MAX_FOCUS, tp->value);
+               break;
             case TOK_BUTTONMIN:
                SetBorderIcon(BI_MIN, tp->value);
                break;
+            case TOK_BUTTONMINFOCUS:
+               SetBorderIcon(BI_MIN_FOCUS, tp->value);
+               break;
             case TOK_BUTTONMENU:
                SetBorderIcon(BI_MENU, tp->value);
+               break;
+            case TOK_BUTTONMENUFOCUS:
+               SetBorderIcon(BI_MENU_FOCUS, tp->value);
                break;
             case TOK_DEFAULTICON:
                SetDefaultIcon(tp->value);
@@ -561,7 +589,7 @@ void ParseRootMenu(const TokenNode *start)
 
    value = FindAttribute(start->attributes, DYNAMIC_ATTRIBUTE);
    menu->dynamic = CopyString(value);
-   menu->timeout_ms = ParseTimeout(start);
+   menu->timeout_ms = ParseTimeout(start, MENU_TIMEOUT_MS);
 
    SetRootMenu(onroot, menu);
 }
@@ -606,7 +634,7 @@ MenuItem *ParseMenuItem(const TokenNode *start, Menu *menu, MenuItem *last)
 
          last->action.type = MA_DYNAMIC;
          last->action.str = CopyString(start->value);
-         last->action.timeout_ms = ParseTimeout(start);
+         last->action.timeout_ms = ParseTimeout(start, MENU_TIMEOUT_MS);
 
          value = FindAttribute(start->attributes, HEIGHT_ATTRIBUTE);
          if(value) {
@@ -847,7 +875,7 @@ MenuItem *ParseMenuInclude(const TokenNode *tp, Menu *menu,
                            MenuItem *last)
 {
    TokenNode *start;
-   const unsigned timeout_ms = ParseTimeout(tp);
+   const unsigned timeout_ms = ParseTimeout(tp, INCLUDE_TIMEOUT_MS);
 
    start = ParseMenuIncludeHelper(tp, timeout_ms, tp->value);
    if(JLIKELY(start)) {
@@ -929,7 +957,7 @@ void ParseKey(const TokenNode *tp)
    if(JUNLIKELY(k.action == ACTION_INVALID)) {
       ParseError(tp, _("invalid Key action: \"%s\""), action);
    } else {
-      InsertBinding(k, mask, key, code, command);
+      InsertBinding(k, mask, key, code, command, tp->fileName, tp->line);
    }
 }
 
@@ -997,6 +1025,18 @@ void ParseWindowStyle(const TokenNode *tp)
 {
    const TokenNode *np;
 
+   const char *temp;
+   temp = FindAttribute(tp->attributes, CLIENTNAME_ATTRIBUTE);
+   if(temp){
+        settings.showClientName = !strcmp(temp,TRUE_VALUE);
+   }
+
+   temp = FindAttribute(tp->attributes, CN_DELIMITERS_ATTRIBUTE);
+   if(temp && strlen(temp)>=2) {
+      memcpy(settings.clientNameDelimiters, temp,
+          sizeof(settings.clientNameDelimiters));
+   }
+
    ParseDecorations(tp, &settings.windowDecorations);
    for(np = tp->subnodeHead; np; np = np->next) {
       switch(np->type) {
@@ -1049,8 +1089,8 @@ void ParseActiveWindowStyle(const TokenNode *tp)
          SetColor(COLOR_TITLE_ACTIVE_FG, np->value);
          break;
       case TOK_BACKGROUND:
-         ParseGradient(np->value,
-            COLOR_TITLE_ACTIVE_BG1, COLOR_TITLE_ACTIVE_BG2);
+         ParseGradient(np->value, COLOR_TITLE_ACTIVE_BG1,
+                       COLOR_TITLE_ACTIVE_BG2);
          break;
       case TOK_OUTLINE:
          ParseGradient(np->value, COLOR_TITLE_ACTIVE_DOWN,
@@ -1077,7 +1117,7 @@ void ParseInclude(const TokenNode *tp, int depth)
       return;
    }
 
-   timeout_ms = ParseTimeout(tp);
+   timeout_ms = ParseTimeout(tp, INCLUDE_TIMEOUT_MS);
    if(!strncmp(tp->value, "exec:", 5)) {
       TokenNode *tokens = TokenizePipe(&tp->value[5], timeout_ms);
       if(JLIKELY(tokens)) {
@@ -1096,13 +1136,22 @@ void ParseInclude(const TokenNode *tp, int depth)
 
 /** Parse desktop configuration. */
 void ParseDesktops(const TokenNode *tp) {
-
+   
+   static const StringMappingType mapping[] = {
+      { "off",       DBACKANDFORTH_OFF },
+      { "on",        DBACKANDFORTH_ON  }
+   };
    TokenNode *np;
    const char *width;
    const char *height;
    int desktop;
+   DesktopBackAndForthType backandforth;
 
    Assert(tp);
+
+   backandforth = ParseAttribute(mapping, ARRAY_LENGTH(mapping), tp,
+                                 "backandforth", DBACKANDFORTH_OFF);
+   settings.desktopBackAndForth = backandforth;
 
    width = FindAttribute(tp->attributes, WIDTH_ATTRIBUTE);
    if(width != NULL) {
@@ -1175,10 +1224,15 @@ void ParseTrayStyle(const TokenNode *tp, FontType font, ColorType fg)
    const ColorType activeFg = fg + COLOR_TRAY_ACTIVE_FG - COLOR_TRAY_FG;
    const ColorType activeBg1 = fg + COLOR_TRAY_ACTIVE_BG1 - COLOR_TRAY_FG;
    const ColorType activeBg2 = fg + COLOR_TRAY_ACTIVE_BG2 - COLOR_TRAY_FG;
+   const ColorType minimizedFg = fg + COLOR_TASKLIST_MINIMIZED_FG - COLOR_TASKLIST_FG;
+   const ColorType minimizedBg1 = fg + COLOR_TASKLIST_MINIMIZED_BG1 - COLOR_TASKLIST_FG;
+   const ColorType minimizedBg2 = fg + COLOR_TASKLIST_MINIMIZED_BG2 - COLOR_TASKLIST_FG;
    const ColorType up = fg + COLOR_TRAY_UP - COLOR_TRAY_FG;
    const ColorType down = fg + COLOR_TRAY_DOWN - COLOR_TRAY_FG;
    const ColorType activeUp = fg + COLOR_TRAY_ACTIVE_UP - COLOR_TRAY_FG;
    const ColorType activeDown = fg + COLOR_TRAY_ACTIVE_DOWN - COLOR_TRAY_FG;
+   const ColorType minimizedUp = fg + COLOR_TASKLIST_MINIMIZED_UP - COLOR_TASKLIST_FG;
+   const ColorType minimizedDown = fg + COLOR_TASKLIST_MINIMIZED_DOWN - COLOR_TASKLIST_FG;
 
    /* TaskListStyle has extra attributes. */
    if(tp->type == TOK_TASKLISTSTYLE) {
@@ -1193,6 +1247,12 @@ void ParseTrayStyle(const TokenNode *tp, FontType font, ColorType fg)
       if(temp) {
          settings.listAllTasks = !strcmp(temp, "all");
       }
+
+      temp = FindAttribute(tp->attributes, KILL_MENU_ATTRIBUTE);
+      if(temp) {
+         settings.showKillMenuItem = !strcmp(temp, TRUE_VALUE);
+      }
+
    } else if(tp->type == TOK_TRAYSTYLE) {
       ParseDecorations(tp, &settings.trayDecorations);
    }
@@ -1204,6 +1264,10 @@ void ParseTrayStyle(const TokenNode *tp, FontType font, ColorType fg)
          break;
       case TOK_ACTIVE:
          ParseActive(np, activeFg, activeBg1, activeBg2, activeUp, activeDown);
+         break;
+      case TOK_MINIMIZED:
+         ParseMinimized(np, minimizedFg, minimizedBg1, minimizedBg2,
+                        minimizedUp, minimizedDown);
          break;
       case TOK_BACKGROUND:
          ParseGradient(np->value, bg1, bg2);
@@ -1255,6 +1319,38 @@ void ParseActive(const TokenNode *tp, ColorType fg,
          /* fall through */
       default:
          InvalidTag(np, TOK_ACTIVE);
+         break;
+      }
+   }
+}
+
+/** Parse minimized tray style. */
+void ParseMinimized(const TokenNode *tp, ColorType fg,
+                 ColorType bg1, ColorType bg2,
+                 ColorType up, ColorType down)
+{
+   const TokenNode *np;
+
+   for(np = tp->subnodeHead; np; np = np->next) {
+      switch(np->type) {
+      case TOK_BACKGROUND:
+         if(bg1 == bg2) {
+            SetColor(bg1, np->value);
+         } else {
+            ParseGradient(np->value, bg1, bg2);
+         }
+         break;
+      case TOK_FOREGROUND:
+         SetColor(fg, np->value);
+         break;
+      case TOK_OUTLINE:
+         if(up != COLOR_COUNT) {
+            ParseGradient(np->value, down, up);
+            break;
+         }
+         /* fall through */
+      default:
+         InvalidTag(np, TOK_MINIMIZED);
          break;
       }
    }
@@ -1407,6 +1503,12 @@ void ParseTaskList(const TokenNode *tp, TrayType *tray)
    if(temp && !strcmp(temp, FALSE_VALUE)) {
       SetTaskBarLabeled(cp, 0);
    }
+
+   temp = FindAttribute(tp->attributes, "labelpos");
+   if(temp) {
+      SetTaskBarLabelPosition(cp, temp);
+   }
+
 }
 
 /** Parse the tray button style. */
@@ -1828,6 +1930,9 @@ void ParseGroup(const TokenNode *tp)
       case TOK_NAME:
          AddGroupName(group, np->value);
          break;
+      case TOK_TITLE:
+         AddGroupTitle(group, np->value);
+         break;
       case TOK_TYPE:
          AddGroupType(group, np->value);
          break;
@@ -1920,7 +2025,13 @@ void ParseGradient(const char *value, ColorType a, ColorType b)
 
    /* Find the separator. */
    sep = strchr(value, ':');
-
+   if(sep) {
+      SetGradient(a, b, GRADIENT_VERTICAL);
+   } else {
+      sep = strchr(value, ';');
+      SetGradient(a, b, GRADIENT_HORIZONTAL);
+   }
+   
    if(!sep) {
 
       /* Only one color given - use the same color for both. */
@@ -2093,13 +2204,12 @@ unsigned ParseUnsigned(const TokenNode *tp, const char *str)
 }
 
 /** Parse a timeout attribute. */
-unsigned ParseTimeout(const TokenNode *tp)
+unsigned ParseTimeout(const TokenNode *tp, unsigned timeout_ms)
 {
-   unsigned timeout_ms = DEFAULT_TIMEOUT_MS;
    char *temp = FindAttribute(tp->attributes, TIMEOUT_ATTRIBUTE);
    if(temp) {
-      timeout_ms = ParseUnsigned(tp, temp);
-      timeout_ms = timeout_ms == 0 ? DEFAULT_TIMEOUT_MS : timeout_ms;
+      const unsigned ms = ParseUnsigned(tp, temp);
+      timeout_ms = ms == 0 ? timeout_ms : ms;
    }
    return timeout_ms;
 }
