@@ -39,6 +39,7 @@ typedef struct OptionListType {
    union {
       unsigned u;
       int s;
+      double d;
    } value;
    struct OptionListType *next;
 } OptionListType;
@@ -225,6 +226,20 @@ void AddGroupOptionSigned(GroupType *gp, OptionType option,
    lp->option = option;
    lp->str = NULL;
    lp->value.s = value;
+   lp->next = gp->options;
+   gp->options = lp;
+}
+
+/** Add an option (with a double) to a group. */
+void AddGroupOptionDouble(GroupType *gp, OptionType option,
+                          double value)
+{
+   OptionListType *lp;
+   Assert(value);
+   lp = Allocate(sizeof(OptionListType));
+   lp->option = option;
+   lp->str = NULL;
+   lp->value.d = value;
    lp->next = gp->options;
    gp->options = lp;
 }
@@ -515,6 +530,13 @@ void ApplyGroup(const GroupType *gp, ClientNode *np)
       case OPTION_NOMAXTITLE:
          np->state.border |= TITLE_NOMAX;
          break;
+      case OPTION_TITLEWIDTH:
+         np->titlewidth = lp->value.d;
+         break;
+      case OPTION_TITLEXPOS:
+         np->titlexpos = lp->value.d;
+         break;
+         
       default:
          Debug("invalid option: %d", lp->option);
          break;

@@ -61,6 +61,8 @@ typedef unsigned char OptionType;
 #define OPTION_OUTLINE        43    /**< Different bordercolor */
 #define OPTION_BACKGROUND     44    /**< Different background color for titlebar. */
 #define OPTION_NOMAXTITLE     45    /**< No title on maximized windows. */
+#define OPTION_TITLEWIDTH    101    /**< relative (to window) title width. */
+#define OPTION_TITLEXPOS     102    /**< relative (to available space) title position. */
 
 /*@{*/
 #define InitializeGroups() (void)(0)
@@ -133,6 +135,14 @@ void AddGroupOptionUnsigned(struct GroupType *gp, OptionType option,
  */
 void AddGroupOptionSigned(struct GroupType *gp, OptionType option,
                           int value);
+
+/** Add a group option that takes a double.
+ * @param gp The group.
+ * @param option The option.
+ * @param value The option value.
+ */
+void AddGroupOptionDouble(struct GroupType *gp, OptionType option,
+                          double value);
 
 /** Apply any matching groups to a client.
  * @param np The client.

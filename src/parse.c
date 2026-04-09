@@ -263,6 +263,7 @@ static int ParseSigned(const TokenNode *tp, const char *str);
 static unsigned ParseUnsigned(const TokenNode *tp, const char *str);
 static unsigned ParseTimeout(const TokenNode *tp, unsigned timeout_ms);
 static unsigned int ParseOpacity(const TokenNode *tp, const char *str);
+double ParseRelDef(const TokenNode *tp, const char *str, double def);
 static WinLayerType ParseLayer(const TokenNode *tp, const char *str);
 static StatusWindowType ParseStatusWindowType(const TokenNode *tp);
 static void InvalidTag(const TokenNode *tp, TokenType parent);
@@ -1995,6 +1996,12 @@ void ParseGroupOption(const TokenNode *tp, struct GroupType *group,
       AddGroupOptionString(group, OPTION_BACKGROUND, option + 11);
    } else if(!strncmp(option, "outline:", 8)) {
       AddGroupOptionString(group, OPTION_OUTLINE, option + 8);
+   } else if(!strncmp(option, "titlewidth:", 11)) {
+      const double tw = ParseRelDef(tp, option + 11, 1.0);
+      AddGroupOptionDouble(group, OPTION_TITLEWIDTH, tw);
+   } else if(!strncmp(option, "titlexpos:", 10)) {
+      const double tx = ParseRelDef(tp, option + 10, 0.0);
+      AddGroupOptionDouble(group, OPTION_TITLEXPOS, tx);
    } else {
       ParseError(tp, _("invalid Group Option: %s"), option);
    }
@@ -2231,6 +2238,22 @@ unsigned ParseOpacity(const TokenNode *tp, const char *str)
    } else {
       return (unsigned int)(value * UINT_MAX);
    }
+}
+
+/** Parse relative titlebar width/pos (a float between 0.0 and 1.0, 0=auto). */
+double ParseRelDef(const TokenNode *tp, const char *str, double def)
+{
+   double value;
+   if(JUNLIKELY(!str)) {
+      ParseError(tp, _("no value specified"));
+      return def;
+   }
+   value = ParseFloat(str);
+   if(JUNLIKELY(value < 0.0 || value > 1.0)) {
+      ParseError(tp, _("invalid relative value: %s"), str);
+      return def;
+   }
+   return value;
 }
 
 /** Parse layer. */

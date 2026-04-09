@@ -148,6 +148,8 @@ ClientNode *AddClientWindow(Window w, char alreadyMapped, char notOwner)
    np->y = attr.y;
    np->width = attr.width;
    np->height = attr.height;
+   np->titlewidth = 1.0;
+   np->titlexpos = 0.0;
    np->cmap = attr.colormap;
    np->state.status = STAT_NONE;
    np->state.maxFlags = MAX_NONE;

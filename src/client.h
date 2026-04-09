@@ -159,6 +159,8 @@ typedef struct ClientNode {
 
    ClientState state;         /**< Window state. */
 
+   double titlewidth;         /**< relative title width. */
+   double titlexpos;          /**< relative title position. */
 
    MouseContextType mouseContext;
 

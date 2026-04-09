@@ -119,6 +119,16 @@ char IsContextEnabled(MouseContextType context, const ClientNode *np)
    }
 }
 
+/** determine titlebar width in pixels */
+unsigned int GetTitleWidth(const ClientNode *np)
+{
+   unsigned int tw = np->width * np->titlewidth;
+   if (tw == 0) {  // static auto
+      tw = settings.titleHeight * 4 + GetStringWidth(FONT_BORDER, np->name);
+   }
+   return tw;
+}
+
 /** Determine the border action to take given coordinates. */
 MouseContextType GetBorderContext(const ClientNode *np, int x, int y)
 {
@@ -131,8 +141,9 @@ MouseContextType GetBorderContext(const ClientNode *np, int x, int y)
    /* Check title bar actions. */
    if((np->state.border & BORDER_TITLE) &&
       titleHeight > settings.borderWidth) {
-      int rightOffset = np->width + west;
-      int leftOffset = west;
+      unsigned int tw = GetTitleWidth(np);
+      int rightOffset = np->width + west - (np->width - tw) * (1.0 - np->titlexpos);
+      int leftOffset = west + (np->width - tw) * np->titlexpos;
 
       if(y >= south && y <= titleHeight + south) {
          int index = 0;
@@ -283,7 +294,8 @@ void ResetBorder(const ClientNode *np)
                       width, height);
 
 #ifdef USE_SHAPE
-   if(settings.cornerRadius > 0 || (np->state.status & STAT_SHAPED)) {
+   //if(settings.cornerRadius > 0 || (np->state.status & STAT_SHAPED)) {
+   {
 
       /* First set the shape to the window border. */
       shapePixmap = JXCreatePixmap(display, np->parent, width, height, 1);
@@ -303,8 +315,27 @@ void ResetBorder(const ClientNode *np)
          const int radius
             = (np->state.maxFlags && (np->state.border & BORDER_NOMAX))
             ? 0 : (settings.cornerRadius - 1);
-         FillRoundedRectangle(shapePixmap, shapeGC, 0, 0, width, height,
-                              radius);
+         if (np->state.border & BORDER_TITLE) {
+            // First fill titlebar
+            unsigned int tw = GetTitleWidth(np);
+            //unsigned int xo = np->titlexpos < 1.0 ? (width - tw - east) * np->titlexpos : width - tw - east ;
+            unsigned int xo = np->titlexpos < 1.0 ? (width - tw - east - west) * np->titlexpos : width - tw - east - west;
+            FillRoundedRectangle(shapePixmap, shapeGC,
+                                 xo, 0,
+                                 //tw + east + (np->titlexpos < 1.0) * west, settings.titleHeight + settings.borderWidth,
+                                 tw + east + west, settings.titleHeight + settings.borderWidth,
+                                 radius > 0 ? radius : 0);
+            // then window (if not shaded)
+            if(!(np->state.status & STAT_SHADED)) {
+               FillRoundedRectangle(shapePixmap, shapeGC,
+                                    0, settings.titleHeight - (settings.windowDecorations == DECO_MOTIF ? 0 : settings.borderWidth),
+                                    width, height - settings.titleHeight + settings.borderWidth,
+                                    radius > 0 ? radius : 0);
+            }
+         } else {
+            // Fill Window only 
+            FillRoundedRectangle(shapePixmap, shapeGC, 0, 0, width, height, radius);
+         }
       }
 
       /* Apply the client window. */
@@ -533,6 +564,19 @@ void DrawBorderHelper(const ClientNode *np)
       } else {
          DrawRoundedRectangle(np->parent, gc, 0, 0, width - 1, height - 1,
                               radius);
+         // additional lines if title is smaller
+         if (np->titlewidth < 1.0) {
+            unsigned int tw = GetTitleWidth(np) + east + west;
+            unsigned int xoff = (width - tw) * np->titlexpos;
+            DrawRoundedRectangle(np->parent, gc, 
+                                 tw + xoff, settings.titleHeight - settings.borderWidth, 
+                                 width - (tw + xoff), 0, 0);
+            if (np->titlexpos > 0.0) {
+               DrawRoundedRectangle(np->parent, gc, 
+                                    0, settings.titleHeight - settings.borderWidth, 
+                                    xoff, 0, 0);
+            }
+         }
       }
    }
 
@@ -578,10 +622,13 @@ void DrawBorderHandles(const ClientNode *np, Pixmap canvas, GC gc)
       pixelDown = colors[COLOR_TITLE_DOWN];
    }
 
+   unsigned int tw = GetTitleWidth(np);
+   unsigned int xo = np->titlexpos < 1.0 ? (width - tw - east - west) * np->titlexpos : width - tw - east - west;
+
    /* Top title border. */
-   segments[offset].x1 = west;
+   segments[offset].x1 = xo + west;
    segments[offset].y1 = settings.borderWidth;
-   segments[offset].x2 = width - east - 1;
+   segments[offset].x2 = xo+tw + east - 1;
    segments[offset].y2 = settings.borderWidth;
    offset += 1;
 
@@ -650,9 +697,9 @@ void DrawBorderHandles(const ClientNode *np, Pixmap canvas, GC gc)
    offset += 1;
 
    /* Inside top border. */
-   segments[offset].x1 = west - 1;
+   segments[offset].x1 = xo + west - 1;
    segments[offset].y1 = settings.borderWidth - 1;
-   segments[offset].x2 = width - east;
+   segments[offset].x2 = xo+tw + east;
    segments[offset].y2 = settings.borderWidth - 1;
    offset += 1;
 
@@ -699,6 +746,96 @@ void DrawBorderHandles(const ClientNode *np, Pixmap canvas, GC gc)
    JXDrawSegments(display, canvas, gc, segments, offset);
    offset = 0;
 
+   /* additional stuff for non-max wide titles */
+   if (np->titlewidth < 1.0) {
+      if (np->titlexpos > 0.0) {
+         // left side window top border outer
+         segments[offset].x1 = 1;
+         segments[offset].y1 = titleHeight;
+         segments[offset].x2 = xo;
+         segments[offset].y2 = titleHeight;
+         offset += 1;
+         segments[offset].x1 = 1;
+         segments[offset].y1 = titleHeight + 1;
+         segments[offset].x2 = xo;
+         segments[offset].y2 = titleHeight + 1;
+         offset += 1;
+         // left vertical title outer border
+         segments[offset].x1 = xo;
+         segments[offset].y1 = 0;
+         segments[offset].x2 = xo;
+         segments[offset].y2 = titleHeight;
+         offset += 1;
+         segments[offset].x1 = xo + 1;
+         segments[offset].y1 = 0;
+         segments[offset].x2 = xo + 1;
+         segments[offset].y2 = titleHeight + 1;
+         offset += 1;
+         // left vertical title inner border
+         segments[offset].x1 = xo + east;
+         segments[offset].y1 = settings.borderWidth + 1;
+         segments[offset].x2 = xo + east;
+         segments[offset].y2 = titleHeight + south - 2;
+         offset += 1;
+      }
+      if (np->titlexpos < 1.0) {
+         // right side window top border outer
+         segments[offset].x1 = xo+tw + east + west - 1;
+         segments[offset].y1 = titleHeight;
+         segments[offset].x2 = width;
+         segments[offset].y2 = titleHeight;
+         offset += 1;
+         segments[offset].x1 = xo+tw + east + west - 1;
+         segments[offset].y1 = titleHeight + 1;
+         segments[offset].x2 = width;
+         segments[offset].y2 = titleHeight + 1;
+         offset += 1;
+         // right vertical title inner border
+         segments[offset].x1 = xo+tw + east;
+         segments[offset].y1 = settings.borderWidth;
+         segments[offset].x2 = xo+tw + east;
+         segments[offset].y2 = titleHeight + south - 2;
+         offset += 1;
+      }
+
+      JXSetForeground(display, gc, pixelUp); // pixelDown or pixelUp
+      JXDrawSegments(display, canvas, gc, segments, offset);
+      offset = 0;
+
+      if (np->titlexpos > 0.0) {
+         // left vertical title inner border
+         segments[offset].x1 = xo + east - 1;
+         segments[offset].y1 = settings.borderWidth;
+         segments[offset].x2 = xo + east - 1;
+         segments[offset].y2 = titleHeight + south - 1;
+         offset += 1;
+      }
+      if (np->titlexpos < 1.0) {
+         // right vertical title outer border
+         segments[offset].x1 = xo+tw + east + west - 1;
+         segments[offset].y1 = 0;
+         segments[offset].x2 = xo+tw + east + west - 1;
+         segments[offset].y2 = titleHeight;
+         offset += 1;
+         segments[offset].x1 = xo+tw + east + west - 2;
+         segments[offset].y1 = 1;
+         segments[offset].x2 = xo+tw + east + west - 2;
+         segments[offset].y2 = titleHeight + 1;
+         offset += 1;
+         // right vertical title inner border
+         segments[offset].x1 = xo+tw + east - 1;
+         segments[offset].y1 = settings.borderWidth + 1;
+         segments[offset].x2 = xo+tw + east - 1;
+         segments[offset].y2 = titleHeight + south - 2;
+         offset += 1;
+         
+      }
+
+      JXSetForeground(display, gc, pixelDown); // pixelDown or pixelUp
+      JXDrawSegments(display, canvas, gc, segments, offset);
+      offset = 0;
+   }
+   
    /* Draw marks */
    if(    (np->state.border & BORDER_RESIZE)
       && !(np->state.status & STAT_SHADED)) {
@@ -896,7 +1033,8 @@ XPoint DrawBorderButtons(const ClientNode *np, Pixmap canvas, GC gc)
 
    /* Draw buttons to the left of the title. */
    index = 0;
-   leftOffset = west;
+   unsigned int tw = GetTitleWidth(np);
+   leftOffset = west + (np->width - tw) * np->titlexpos;
    while(settings.titleBarLayout[index]) {
       const MouseContextType context = settings.titleBarLayout[index];
       const int nextOffset = leftOffset + titleHeight;
@@ -924,7 +1062,7 @@ XPoint DrawBorderButtons(const ClientNode *np, Pixmap canvas, GC gc)
    index -= 1;
 
    /* Draw buttons to the right of the title. */
-   rightOffset = np->width + west;
+   rightOffset = np->width + west - (np->width - tw) * (1.0 - np->titlexpos);
    while(index > titleIndex) {
       const int nextOffset = rightOffset - titleHeight;
       const MouseContextType context = settings.titleBarLayout[index];
@@ -1418,4 +1556,4 @@ void SetBorderIcon(BorderIconType t, const char *name)
    }
    buttonNames[t] = CopyString(name);
 }
- 
+

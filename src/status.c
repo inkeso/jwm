@@ -40,7 +40,11 @@ void GetMoveResizeCoordinates(const ClientNode *np, StatusWindowType type,
 
    if(type == SW_WINDOW) {
       *x = np->x + (np->width - statusWindowWidth) / 2;
-      *y = np->y + (np->height - statusWindowHeight) / 2;
+      if (np->state.status & STAT_SHADED) {
+         *y = np->y;
+      } else {
+         *y = np->y + (np->height - statusWindowHeight) / 2;
+      }
       return;
    }
 
